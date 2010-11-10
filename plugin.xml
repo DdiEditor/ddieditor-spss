@@ -12,7 +12,7 @@
    <extension
          point="org.eclipse.ui.menus">
       <menuContribution
-            locationURI="menu:filemenu-importmenu?after=new-ddi-3-file">
+            locationURI="menu:filemenu-importmenu?after=merge-ddi">
          <command
                commandId="org.ddialliance.ddieditor.spss.command.ImportSpss"
                icon="icons/Document.png"
