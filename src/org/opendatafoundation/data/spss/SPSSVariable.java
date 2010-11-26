@@ -730,6 +730,8 @@ public abstract class SPSSVariable {
 
 	}
 
+	String unsurpportedInDDI3 = "Unsurported in DDI-3";
+
 	/**
 	 * Gets the DDI data type for this variable that matches the controlled
 	 * vocabulary of the representation @type attribute as closely as possible.
@@ -742,13 +744,45 @@ public abstract class SPSSVariable {
 		case 0:
 		case 1:
 		case 2:
-		case 26:
-		case 27:
-			typeStr = "String";
-			break;
 		case 3:
 		case 4:
 		case 5:
+			// TODO: 6,7,8,9,10,11,12,15,16
+		case 17:
+			typeStr = "Double";
+			break;
+		case 20:
+			typeStr = "Date";
+			break;
+		case 21:
+			typeStr = "Time";
+			break;
+		case 22:
+			typeStr = "DateTime";
+			break;
+		case 23:
+			typeStr = "Date";
+			break;
+		case 24:
+			typeStr = "Date";
+			break;
+		case 25:
+			typeStr = "DateTime";
+			break;
+		case 26:
+			typeStr = "Day";
+			break;
+		case 27:
+			typeStr = "Month";
+			break;
+		case 28:
+			typeStr = "MonthDay";
+			break;
+		case 29:
+			typeStr = unsurpportedInDDI3;
+		case 30:
+			typeStr = unsurpportedInDDI3;
+			break;
 		case 31:
 		case 32:
 		case 33:
@@ -762,27 +796,12 @@ public abstract class SPSSVariable {
 				typeStr = "BigInteger"; // TODO: check length and return smaller
 										// types like Integer, Short, etc.
 			break;
-		case 17:
-			typeStr = "Double";
-			break;
-		case 20:
-		case 23:
-		case 24:
-		case 28:
-		case 29:
-		case 30:
 		case 38:
+			typeStr = "Date";
+			break;
 		case 39:
 			typeStr = "Date";
 			break;
-		case 21:
-			typeStr = "Time";
-			break;
-		case 22:
-		case 25:
-			typeStr = "DateTime";
-			break;
-		// TODO: 6,7,8,9,10,11,12,15,16
 		default:
 			typeStr = null;
 		}
