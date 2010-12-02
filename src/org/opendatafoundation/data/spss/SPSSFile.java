@@ -39,7 +39,6 @@ import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
 import java.io.Writer;
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -51,7 +50,13 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactoryConfigurationError;
 
+import org.ddialliance.ddieditor.logic.identification.IdentificationGenerator;
+import org.ddialliance.ddieditor.logic.identification.IdentificationManager;
+import org.ddialliance.ddieditor.model.DdiManager;
+import org.ddialliance.ddieditor.ui.model.ElementType;
+import org.ddialliance.ddiftp.util.DDIFtpException;
 import org.opendatafoundation.data.FileFormatInfo;
 import org.opendatafoundation.data.Utils;
 import org.w3c.dom.DOMException;
@@ -82,76 +87,6 @@ public class SPSSFile extends RandomAccessFile {
 	public static final String DDI3_REUSABLE_NAMESPACE = "ddi:reusable:3_1";
 	public static final String DDI3_STUDY_UNIT_NAMESPACE = "ddi:studyunit:3_1";
 
-	public String categorySchemeIDSuffix = "CatSch"; // < String appended to
-														// Logical Product r:ID
-														// to create unique
-														// CategoryScheme
-														// identifiers
-	public String codeSchemeIDSuffix = "CodSch"; // < String appended to Logical
-													// Product r:ID to create
-													// unique CodeScheme
-													// identifiers
-	public String dataRelationshipID = "DataRel"; // < Identifier for the
-													// DatRelationship (Logical
-													// Product)
-	public String grossFileID = "GroFilStr"; // < Identifier for the
-												// GrossFileStructure (Physical
-												// Instance)
-	public String grossRecordStructureID = "GroRecStr"; // < Identifier for the
-														// GrossRecordStructure
-														// (PhysicalDataProduct)
-	public String logicalRecordID = "LogRec"; // < Identifier for the
-												// LogicalRecord
-												// (LogicalDataProduct)
-	public String physicalRecordSegmentID = "PhysRecSeg1"; // < Identifier for
-															// the
-															// PhysicalRecordSegment
-															// (PhysicalDataProduct)
-	public String logicalProductIDSuffix = "LogPrd"; // < String appended to id
-														// to create unique
-														// LogicalProduct
-														// identifiers
-	public String physicalDataProductIDSuffix = "PhyPrd"; // < String appended
-															// to id to create
-															// unique
-															// PhysicalDataProduct
-															// identifiers
-	public String physicalStructureSchemeSuffix = "PhyStrSch"; // < String
-																// appended to
-																// id to create
-																// unique
-																// PhysicalStructureScheme
-																// identifiers
-	public String physicalStructureID = "PhyStr"; // < Identifier for the
-													// PhysicalStructure
-													// (Physical Data Product)
-	public String recordLayoutSchemeSuffix = "RecLaySch"; // < String appended
-															// to id to create
-															// unique
-															// RecordLayoutScheme
-															// identifiers
-	public String physicalInstanceIDSuffix = "PhyIns"; // < String appended to
-														// Logical Product r:ID
-														// to create unique
-														// PhysicalInstance
-														// identifiers
-	public String physicalInstanceFileID = "DataFile"; // < Identifier for the
-														// DataFileIdentification
-														// (PhysicalInstance)
-	public String variableSchemeIDSuffix = "VarSch"; // < String appended to
-														// Logical Product r:ID
-														// to create unique
-														// VariableScheme
-														// identifiers
-	public String variableCategoryPrefix = "Cat"; // < String prefixing variable
-													// categories r:ID create
-													// valid identifiers within
-													// scheme (number only not
-													// allowed)
-	public String variableIDPrefix = "V"; // < String prefixing variable r:ID to
-											// create valid identifiers within
-											// scheme (number only not allowed)
-
 	// Log
 	Boolean logFlag = true; // < Turn logging on/off
 	public File logFile; // < Optional logfile. If null, log messages are sent
@@ -162,9 +97,6 @@ public class SPSSFile extends RandomAccessFile {
 
 	// SPSS File
 	public File file; // < the SPSS File object
-	String uniqueID; // < a unique identifier for this file. If null, the
-						// getUniqueID() function will initialize this value
-						// using the java.util.UUID.randomUUID()
 	boolean isBigEndian = false; // < Indicates file "endianness" for number
 									// storage. Intel processor produced files
 									// are little-endian (default).
@@ -189,6 +121,9 @@ public class SPSSFile extends RandomAccessFile {
 	// SPSS Data (actual values stored in variables)
 	long dataStartPosition = -1;
 	public boolean isDataLoaded = false;
+
+	private static IdentificationGenerator idGenerator = IdentificationManager
+			.getInstance().getIdentificationGenerator();
 
 	/**
 	 * Constructor
@@ -282,8 +217,12 @@ public class SPSSFile extends RandomAccessFile {
 	 * 
 	 * @throws SPSSFileException
 	 * @throws TransformerException
+	 * @throws DDIFtpException
+	 * @throws TransformerFactoryConfigurationError
+	 * @throws DOMException
 	 */
-	public void dumpDDI2() throws SPSSFileException, TransformerException {
+	public void dumpDDI2() throws SPSSFileException, TransformerException,
+			DOMException, TransformerFactoryConfigurationError, DDIFtpException {
 		log(Utils.DOM2String(getDDI2(new FileFormatInfo())));
 	}
 
@@ -292,8 +231,11 @@ public class SPSSFile extends RandomAccessFile {
 	 * 
 	 * @throws SPSSFileException
 	 * @throws TransformerException
+	 * @throws DDIFtpException
+	 * @throws TransformerFactoryConfigurationError
 	 */
-	public void dumpDDI3() throws SPSSFileException, TransformerException {
+	public void dumpDDI3() throws SPSSFileException, TransformerException,
+			TransformerFactoryConfigurationError, DDIFtpException {
 		log(Utils.DOM2String(getDDI3LogicalProduct(null, null, null)));
 		log(Utils.DOM2String(getDDI3PhysicalDataProduct(new FileFormatInfo())));
 		log(Utils
@@ -395,6 +337,25 @@ public class SPSSFile extends RandomAccessFile {
 		return (elapsed);
 	}
 
+	public String createId(ElementType elementType) throws DDIFtpException {
+		return idGenerator.generateId(elementType.getIdPrefix(), "");
+	}
+
+	public String createId(ElementType elementType, int localId)
+			throws DDIFtpException {
+		return idGenerator.generateId(
+				elementType.getIdPrefix() + idGenerator.getDelimiter()
+						+ localId, "");
+	}
+	
+	public void setLangAttr(Element element) {
+		// TODO
+	}
+
+	public String getIdDelimiter() {
+		return idGenerator.getDelimiter();
+	}
+
 	/**
 	 * Determines if the data section of the file is compressed
 	 * 
@@ -416,8 +377,11 @@ public class SPSSFile extends RandomAccessFile {
 	 * 
 	 * @return the generated document
 	 * @throws SPSSFileException
+	 * @throws DDIFtpException
+	 * @throws DOMException
 	 */
-	public Document getDDI2() throws SPSSFileException {
+	public Document getDDI2() throws SPSSFileException, DOMException,
+			DDIFtpException {
 		return (getDDI2(new FileFormatInfo()));
 	}
 
@@ -426,8 +390,11 @@ public class SPSSFile extends RandomAccessFile {
 	 * 
 	 * @return the generated document
 	 * @throws SPSSFileException
+	 * @throws DDIFtpException
+	 * @throws DOMException
 	 */
-	public Document getDDI2(FileFormatInfo dataFormat) throws SPSSFileException {
+	public Document getDDI2(FileFormatInfo dataFormat)
+			throws SPSSFileException, DOMException, DDIFtpException {
 		DocumentBuilderFactory domFactory = DocumentBuilderFactory
 				.newInstance();
 		DocumentBuilder domBuilder;
@@ -441,7 +408,7 @@ public class SPSSFile extends RandomAccessFile {
 			/* codeBook */
 			Element codeBook = doc.createElementNS(DDI2_NAMESPACE, "codeBook");
 			codeBook.setAttribute("version", "2.0");
-			codeBook.setAttribute("ID", this.getUniqueID());
+			codeBook.setAttribute("ID", idGenerator.generateId(null, null));
 			doc.appendChild(codeBook);
 
 			// docDscr */
@@ -518,14 +485,13 @@ public class SPSSFile extends RandomAccessFile {
 			/* dataDscr */
 			Element dataDscr = (Element) codeBook.appendChild(doc
 					.createElementNS(DDI2_NAMESPACE, "dataDscr"));
-			Iterator varIterator = variableMap.keySet().iterator();
+			Iterator<Integer> varIterator = variableMap.keySet().iterator();
 			int offset = 1;
 			while (varIterator.hasNext()) {
 				SPSSVariable var = variableMap.get(varIterator.next());
 				dataDscr.appendChild(var.getDDI2(doc, dataFormat, offset));
 				offset += var.getLength(dataFormat);
 			}
-
 		} catch (ParserConfigurationException e) {
 			throw new SPSSFileException("Error creating DDI Document: "
 					+ e.getMessage());
@@ -533,26 +499,55 @@ public class SPSSFile extends RandomAccessFile {
 		return (doc);
 	}
 
+	String logicalProductDdi3Id = null;
+
 	/**
 	 * Returns a default Physical Data Product identifier based on the file
 	 * unique identifier.
 	 * 
 	 * @return a String containing the r:ID
+	 * @throws DDIFtpException
 	 */
-	public String getDDI3DefaultLogicalProductID() {
-		return (this.getUniqueID() + "_" + this.logicalProductIDSuffix);
+	public String getDDI3DefaultLogicalProductID() throws DDIFtpException {
+		// return (this.getUniqueID() + "_" + this.logicalProductIDSuffix);
+		if (logicalProductDdi3Id == null) {
+			logicalProductDdi3Id = IdentificationManager
+					.getInstance()
+					.getIdentificationGenerator()
+					.generateId(ElementType.LOGICAL_PRODUCT.getIdPrefix(), null);
+		}
+		return logicalProductDdi3Id;
+
 	}
+
+	String physicalDataProductId = null;
 
 	/**
 	 * Returns a default Physical Data Product identifier based on the file
 	 * unique identifier and the data format.
 	 * 
 	 * @return a String containing the r:ID
+	 * @throws DDIFtpException
 	 */
-	public String getDDI3DefaultPhysicalDataProductID(FileFormatInfo dataFormat) {
-		return (this.getUniqueID() + "_" + this.physicalDataProductIDSuffix
-				+ "_" + dataFormat.toString());
+	public String getDDI3DefaultPhysicalDataProductID(FileFormatInfo dataFormat)
+			throws DDIFtpException {
+		// return (this.getUniqueID() + "_" + this.physicalDataProductIDSuffix
+		// + "_" + dataFormat.toString());
+		if (physicalDataProductId == null) {
+			physicalDataProductId = IdentificationManager
+					.getInstance()
+					.getIdentificationGenerator()
+					.generateId(
+							ElementType.PHYSICAL_DATA_PRODUCT.getIdPrefix()
+									+ IdentificationManager.getInstance()
+											.getIdentificationGenerator()
+											.getDelimiter()
+									+ dataFormat.toString(), null);
+		}
+		return physicalDataProductId;
 	}
+
+	String physicalInstanceDdi3Id = null;
 
 	/**
 	 * Returns a default Physical Instance identifier based on the file unique
@@ -560,10 +555,25 @@ public class SPSSFile extends RandomAccessFile {
 	 * 
 	 * @param dataFormat
 	 * @return a String containing the r:ID
+	 * @throws DDIFtpException
 	 */
-	public String getDDI3DefaultPhysicalInstanceID(FileFormatInfo dataFormat) {
-		return (this.getUniqueID() + "_" + this.physicalInstanceIDSuffix + "_" + dataFormat
-				.toString());
+	public String getDDI3DefaultPhysicalInstanceID(FileFormatInfo dataFormat)
+			throws DDIFtpException {
+		if (physicalInstanceDdi3Id == null) {
+			physicalInstanceDdi3Id = IdentificationManager
+					.getInstance()
+					.getIdentificationGenerator()
+					.generateId(
+							ElementType.PHYSICAL_INSTANCE.getIdPrefix()
+									+ IdentificationManager.getInstance()
+											.getIdentificationGenerator()
+											.getDelimiter()
+									+ dataFormat.toString(), null);
+		}
+		// return (this.getUniqueID() + "_" + this.physicalInstanceIDSuffix +
+		// "_" + dataFormat
+		// .toString());
+		return physicalInstanceDdi3Id;
 	}
 
 	/**
@@ -571,32 +581,63 @@ public class SPSSFile extends RandomAccessFile {
 	 * unique identifier and the data format.
 	 * 
 	 * @return a String containing the r:ID
+	 * @throws DDIFtpException
 	 */
 	public String getDDI3DefaultPhysicalStructureSchemeID(
-			FileFormatInfo dataFormat) {
-		return (this.getUniqueID() + "_" + this.physicalStructureSchemeSuffix
-				+ "_" + dataFormat.toString());
+			FileFormatInfo dataFormat) throws DDIFtpException {
+		// return (this.getUniqueID() + "_" + this.physicalStructureSchemeSuffix
+		// + "_" + dataFormat.toString());
+		return IdentificationManager
+				.getInstance()
+				.getIdentificationGenerator()
+				.generateId(
+						ElementType.PHYSICAL_STRUCTURE_SCHEME.getIdPrefix(),
+						null);
 	}
+
+	String recordLayoutSchemeDdi3Id = null;
 
 	/**
 	 * Returns a default Record Layout Scheme identifier based on the file
 	 * unique identifier and the data format.
 	 * 
 	 * @return a String containing the r:ID
+	 * @throws DDIFtpException
 	 */
-	public String getDDI3DefaultRecordLayoutSchemeID(FileFormatInfo dataFormat) {
-		return (this.getUniqueID() + "_" + this.recordLayoutSchemeSuffix + "_" + dataFormat
-				.toString());
+	public String getDDI3DefaultRecordLayoutSchemeID(FileFormatInfo dataFormat)
+			throws DDIFtpException {
+		// return (this.getUniqueID() + "_" + this.recordLayoutSchemeSuffix +
+		// "_" +
+		// dataFormat
+		// .toString());
+		if (recordLayoutSchemeDdi3Id == null) {
+			recordLayoutSchemeDdi3Id = IdentificationManager
+					.getInstance()
+					.getIdentificationGenerator()
+					.generateId(
+							ElementType.RECORD_LAYOUT_SCHEME.getIdPrefix()
+									+ IdentificationManager.getInstance()
+											.getIdentificationGenerator()
+											.getDelimiter()
+									+ dataFormat.toString(), null);
+		}
+		return recordLayoutSchemeDdi3Id;
 	}
+
+	String variableSchemeId = null;
 
 	/**
 	 * Returns a default Variable Scheme identifier based on the file unique
 	 * identifier.
 	 * 
 	 * @return a String containing the r:ID
+	 * @throws DDIFtpException
 	 */
-	public String getDDI3DefaultVariableSchemeID() {
-		return (this.getUniqueID() + "_" + this.variableSchemeIDSuffix);
+	public String getDDI3DefaultVariableSchemeID() throws DDIFtpException {
+		if (variableSchemeId == null) {
+			variableSchemeId = createId(ElementType.VARIABLE_SCHEME);
+		}
+		return variableSchemeId;
 	}
 
 	/**
@@ -611,9 +652,11 @@ public class SPSSFile extends RandomAccessFile {
 	 * @return a org.w3c.dom.Document containing the generated Logical Data
 	 *         Product
 	 * @throws SPSSFileException
+	 * @throws DDIFtpException
 	 */
 	public Document getDDI3LogicalProduct(ExportOptions exportOptions,
-			String uniqueID, String identifyingAgency) throws SPSSFileException {
+			String uniqueID, String identifyingAgency)
+			throws SPSSFileException, DDIFtpException {
 		DocumentBuilderFactory domFactory = DocumentBuilderFactory
 				.newInstance();
 		DocumentBuilder domBuilder;
@@ -628,8 +671,8 @@ public class SPSSFile extends RandomAccessFile {
 			Element logicalProduct = (Element) doc.appendChild(doc
 					.createElementNS(DDI3_LOGICAL_PRODUCT_NAMESPACE,
 							"LogicalProduct"));
-			Utils.setDDIMaintainableId(logicalProduct,
-					getDDI3DefaultLogicalProductID());
+
+			Utils.setDDIMaintainableId(logicalProduct,getDDI3DefaultLogicalProductID());
 
 			// Create a DataRelationship with a logical record containing all
 			// variables
@@ -637,13 +680,14 @@ public class SPSSFile extends RandomAccessFile {
 					.createElementNS(SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 							"DataRelationship"));
 			Utils.setDDIIdentifiableId(dataRelationship,
-					this.dataRelationshipID);
+					createId(ElementType.DATA_RELATIONSHIP));
 
 			// Create a logical record containing all variables
 			Element logicalRecord = (Element) dataRelationship.appendChild(doc
 					.createElementNS(SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 							"LogicalRecord"));
-			Utils.setDDIIdentifiableId(logicalRecord, this.logicalRecordID);
+			Utils.setDDIIdentifiableId(logicalRecord,
+					createId(ElementType.LOGICAL_RECORD));
 			logicalRecord.setAttribute("hasLocator", "false");
 
 			// Variables in record
@@ -660,14 +704,13 @@ public class SPSSFile extends RandomAccessFile {
 			elem.setTextContent(this.getDDI3DefaultVariableSchemeID());
 
 			// Create category schemes (one per variable with label set)
-
 			Iterator varIterator = variableMap.keySet().iterator();
 			if (exportOptions.createCategories) {
 				while (varIterator.hasNext()) {
 					SPSSVariable var = variableMap.get(varIterator.next());
 					if (var.hasValueLabels()) {
 						logicalProduct.appendChild(var
-								.getDDI3CategoryScheme(doc));
+								.createDDI3CategoryScheme(doc));
 					}
 				}
 			}
@@ -677,7 +720,8 @@ public class SPSSFile extends RandomAccessFile {
 			while (varIterator.hasNext()) {
 				SPSSVariable var = variableMap.get(varIterator.next());
 				if (var.hasValueLabels()) {
-					logicalProduct.appendChild(var.getDDI3CodeScheme(doc, exportOptions.createCategories));
+					logicalProduct.appendChild(var.createDDI3CodeScheme(doc,
+							exportOptions.createCategories));
 				}
 			}
 
@@ -687,13 +731,13 @@ public class SPSSFile extends RandomAccessFile {
 							"VariableScheme"));
 			Utils.setDDIMaintainableId(varScheme,
 					getDDI3DefaultVariableSchemeID());
+
 			// add variables
 			varIterator = variableMap.keySet().iterator();
 			while (varIterator.hasNext()) {
 				SPSSVariable var = variableMap.get(varIterator.next());
-				varScheme.appendChild(var.getDDI3Variable(doc));
+				varScheme.appendChild(var.createDDI3Variable(doc));
 			}
-
 		} catch (ParserConfigurationException e) {
 			throw new SPSSFileException("Error creating DDI Document: "
 					+ e.getMessage());
@@ -709,9 +753,10 @@ public class SPSSFile extends RandomAccessFile {
 	 * @return a org.w3c.dom.Document containing the generated Physical Data
 	 *         Product
 	 * @throws SPSSFileException
+	 * @throws DDIFtpException
 	 */
 	public Document getDDI3PhysicalDataProduct(FileFormatInfo dataFormat)
-			throws SPSSFileException {
+			throws SPSSFileException, DDIFtpException {
 		return (getDDI3PhysicalDataProduct(dataFormat, null, null, null));
 	}
 
@@ -725,9 +770,10 @@ public class SPSSFile extends RandomAccessFile {
 	 * @return a org.w3c.dom.Document containing the generated Physical Data
 	 *         Product
 	 * @throws SPSSFileException
+	 * @throws DDIFtpException
 	 */
 	public Document getDDI3PhysicalDataProduct(FileFormatInfo dataFormat,
-			String logicalProductID) throws SPSSFileException {
+			String logicalProductID) throws SPSSFileException, DDIFtpException {
 		return (getDDI3PhysicalDataProduct(dataFormat, logicalProductID, null,
 				null));
 	}
@@ -745,9 +791,11 @@ public class SPSSFile extends RandomAccessFile {
 	 * @return a org.w3c.dom.Document containing the generated Physical Data
 	 *         Product
 	 * @throws SPSSFileException
+	 * @throws DDIFtpException
 	 */
 	private Document getDDI3PhysicalDataProduct(FileFormatInfo dataFormat,
-			String logicalProductID, String uniqueID) throws SPSSFileException {
+			String logicalProductID, String uniqueID) throws SPSSFileException,
+			DDIFtpException {
 		return (getDDI3PhysicalDataProduct(dataFormat, logicalProductID,
 				uniqueID, null));
 	}
@@ -766,10 +814,11 @@ public class SPSSFile extends RandomAccessFile {
 	 * @return a org.w3c.dom.Document containing the generated Physical Data
 	 *         Product
 	 * @throws SPSSFileException
+	 * @throws DDIFtpException
 	 */
 	private Document getDDI3PhysicalDataProduct(FileFormatInfo dataFormat,
 			String logicalProductID, String uniqueID, String identifyingAgency)
-			throws SPSSFileException {
+			throws SPSSFileException, DDIFtpException {
 		DocumentBuilderFactory domFactory = DocumentBuilderFactory
 				.newInstance();
 		DocumentBuilder domBuilder;
@@ -802,8 +851,15 @@ public class SPSSFile extends RandomAccessFile {
 					.appendChild(doc.createElementNS(
 							DDI3_PHYSICAL_PRODUCT_NAMESPACE,
 							"PhysicalStructure"));
-			Utils.setDDIVersionableId(physicalStructure,
-					this.physicalStructureID);
+			Utils.setDDIVersionableId(
+					physicalStructure,
+					IdentificationManager
+							.getInstance()
+							.getIdentificationGenerator()
+							.generateId(
+									ElementType.PHYSICAL_STRUCTURE
+											.getIdPrefix(), null));
+			// this.physicalStructureID);
 
 			// logical product reference
 			Element logicalReference = (Element) physicalStructure
@@ -833,8 +889,15 @@ public class SPSSFile extends RandomAccessFile {
 					.appendChild(doc.createElementNS(
 							DDI3_PHYSICAL_PRODUCT_NAMESPACE,
 							"GrossRecordStructure"));
-			Utils.setDDIIdentifiableId(grossRecordStructure,
-					this.grossRecordStructureID);
+			Utils.setDDIIdentifiableId(
+					grossRecordStructure,
+					IdentificationManager
+							.getInstance()
+							.getIdentificationGenerator()
+							.generateId(
+									ElementType.GROSS_RECORD_STRUCTURE
+											.getIdPrefix(), null));
+			// this.grossRecordStructureID);
 			// 20071005-PH: This element has been removed in RC_001 (is always
 			// equal to 1)
 			// grossRecordStructure.setAttribute("recordsPerCase","1");
@@ -847,17 +910,25 @@ public class SPSSFile extends RandomAccessFile {
 					.appendChild(doc.createElementNS(
 							DDI3_PHYSICAL_PRODUCT_NAMESPACE,
 							"LogicalRecordReference"));
+			// TODO logicalRecordReference
 			elem = (Element) logicalRecordReference.appendChild(doc
 					.createElementNS(SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
-			elem.setTextContent(this.logicalRecordID);
+			elem.setTextContent("idref");
 
 			// PhysicalRecordSegment
 			Element physicalRecordSegment = (Element) grossRecordStructure
 					.appendChild(doc.createElementNS(
 							DDI3_PHYSICAL_PRODUCT_NAMESPACE,
 							"PhysicalRecordSegment"));
-			Utils.setDDIIdentifiableId(physicalRecordSegment,
-					this.physicalRecordSegmentID);
+			Utils.setDDIIdentifiableId(
+					physicalRecordSegment,
+					IdentificationManager
+							.getInstance()
+							.getIdentificationGenerator()
+							.generateId(
+									ElementType.PHYSICAL_RECORDSEGMENT
+											.getIdPrefix(), null));
+			// this.physicalRecordSegmentID);
 			physicalRecordSegment.setAttribute("segmentOrder", "1");
 			physicalRecordSegment.setAttribute("hasSegmentKey", "false");
 
@@ -893,13 +964,16 @@ public class SPSSFile extends RandomAccessFile {
 			elem = (Element) elem.appendChild(doc.createElementNS(
 					SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
 			elem.setTextContent(getDDI3DefaultPhysicalStructureSchemeID(dataFormat));
+			// TODO physicalStructureReference
 			elem = (Element) physicalStructureReference.appendChild(doc
 					.createElementNS(SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
-			elem.setTextContent(this.physicalStructureID);
+			elem.setTextContent("idref");
+			// TODO physicalRecordSegmentID
 			elem = (Element) physicalStructureReference.appendChild(doc
 					.createElementNS(SPSSFile.DDI3_PHYSICAL_PRODUCT_NAMESPACE,
 							"PhysicalRecordSegmentUsed"));
-			elem.setTextContent(this.physicalRecordSegmentID);
+			elem.setTextContent("idref");
+
 			// character set
 			elem = (Element) recordLayout.appendChild(doc.createElementNS(
 					DDI3_PHYSICAL_PRODUCT_NAMESPACE, "CharacterSet"));
@@ -1062,9 +1136,10 @@ public class SPSSFile extends RandomAccessFile {
 	 * @return a org.w3c.dom.Document containing the generated Physical Data
 	 *         Instance
 	 * @throws SPSSFileException
+	 * @throws DDIFtpException
 	 */
 	public Document getDDI3PhysicalInstance(URI uri, FileFormatInfo dataFormat)
-			throws SPSSFileException {
+			throws SPSSFileException, DDIFtpException {
 		return (getDDI3PhysicalInstance(uri, dataFormat, null, null, null));
 	}
 
@@ -1079,10 +1154,11 @@ public class SPSSFile extends RandomAccessFile {
 	 * @return a org.w3c.dom.Document containing the generated Physical Data
 	 *         Instance
 	 * @throws SPSSFileException
+	 * @throws DDIFtpException
 	 */
 	private Document getDDI3PhysicalInstance(URI uri,
 			FileFormatInfo dataFormat, String recordLayoutSchemeID)
-			throws SPSSFileException {
+			throws SPSSFileException, DDIFtpException {
 		return (getDDI3PhysicalInstance(uri, dataFormat, recordLayoutSchemeID,
 				null, null));
 	}
@@ -1101,10 +1177,11 @@ public class SPSSFile extends RandomAccessFile {
 	 * @return a org.w3c.dom.Document containing the generated Physical Data
 	 *         Instance
 	 * @throws SPSSFileException
+	 * @throws DDIFtpException
 	 */
 	private Document getDDI3PhysicalInstance(URI uri,
 			FileFormatInfo dataFormat, String recordLayoutSchemeID,
-			String uniqueID) throws SPSSFileException {
+			String uniqueID) throws SPSSFileException, DDIFtpException {
 		return (getDDI3PhysicalInstance(uri, dataFormat, recordLayoutSchemeID,
 				uniqueID, null));
 	}
@@ -1124,10 +1201,12 @@ public class SPSSFile extends RandomAccessFile {
 	 * @return a org.w3c.dom.Document containing the generated Physical Data
 	 *         Instance
 	 * @throws SPSSFileException
+	 * @throws DDIFtpException
 	 */
 	private Document getDDI3PhysicalInstance(URI uri,
 			FileFormatInfo dataFormat, String recordLayoutSchemeID,
-			String uniqueID, String identifyingAgency) throws SPSSFileException {
+			String uniqueID, String identifyingAgency)
+			throws SPSSFileException, DDIFtpException {
 		DocumentBuilderFactory domFactory = DocumentBuilderFactory
 				.newInstance();
 		DocumentBuilder domBuilder;
@@ -1170,8 +1249,15 @@ public class SPSSFile extends RandomAccessFile {
 					.appendChild(doc.createElementNS(
 							DDI3_PHYSICAL_INSTANCE_NAMESPACE,
 							"DataFileIdentification"));
-			Utils.setDDIIdentifiableId(dataFileIdentification,
-					this.physicalInstanceFileID);
+			Utils.setDDIIdentifiableId(
+					dataFileIdentification,
+					IdentificationManager
+							.getInstance()
+							.getIdentificationGenerator()
+							.generateId(
+									ElementType.DATA_FILE_IDENTIFICATION
+											.getIdPrefix(), null));
+			// this.physicalInstanceFileID);
 			// Master
 			if (dataFormat.format == FileFormatInfo.Format.SPSS)
 				dataFileIdentification.setAttribute("isMaster", "true");
@@ -1201,7 +1287,15 @@ public class SPSSFile extends RandomAccessFile {
 			Element grossFile = (Element) physicalInstance.appendChild(doc
 					.createElementNS(DDI3_PHYSICAL_INSTANCE_NAMESPACE,
 							"GrossFileStructure"));
-			Utils.setDDIIdentifiableId(grossFile, this.grossFileID);
+			Utils.setDDIIdentifiableId(
+					grossFile,
+					IdentificationManager
+							.getInstance()
+							.getIdentificationGenerator()
+							.generateId(
+									ElementType.GROSS_FILE_STRUCTURE
+											.getIdPrefix(), null));
+			// this.grossFileID);
 
 			// File statistics
 			elem = (Element) grossFile.appendChild(doc.createElementNS(
@@ -1328,11 +1422,11 @@ public class SPSSFile extends RandomAccessFile {
 	 * 
 	 * @return a String holding the identifier
 	 */
-	public String getUniqueID() {
-		if (this.uniqueID == null)
-			this.uniqueID = "ID_" + java.util.UUID.randomUUID().toString();
-		return (this.uniqueID);
-	}
+	// public String getUniqueID() {
+	// if (this.uniqueID == null)
+	// this.uniqueID = "ID_" + java.util.UUID.randomUUID().toString();
+	// return (this.uniqueID);
+	// }
 
 	/**
 	 * Gets a SPSSVariable based on its 0-based file index position.
@@ -1707,14 +1801,4 @@ public class SPSSFile extends RandomAccessFile {
 		s = SPSSUtils.byte8ToString(buffer);
 		return s;
 	}
-
-	/**
-	 * Sets the unique identifier for this file.
-	 * 
-	 * @param str
-	 */
-	public void setUniqueID(String str) {
-		this.uniqueID = str;
-	}
-
 }

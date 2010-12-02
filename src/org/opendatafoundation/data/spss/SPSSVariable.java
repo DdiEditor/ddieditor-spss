@@ -29,10 +29,13 @@ package org.opendatafoundation.data.spss;
  * 
  */
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.ddialliance.ddieditor.ui.model.ElementType;
+import org.ddialliance.ddiftp.util.DDIFtpException;
 import org.opendatafoundation.data.FileFormatInfo;
 import org.opendatafoundation.data.Utils;
 import org.w3c.dom.DOMException;
@@ -45,7 +48,8 @@ import org.w3c.dom.Element;
  * @author Pascal Heus (pheus@opendatafoundation.org)
  */
 public abstract class SPSSVariable {
-	SPSSFile file; // < The SPSS file this variable belongs to
+	final static int LABEL_INFO_LENGHT = 40;
+	SPSSFile spssFile; // < The SPSS file this variable belongs to
 	public SPSSRecordType2 variableRecord; // < The SPSS type 2 record
 											// describing this variable
 	public SPSSRecordType3 valueLabelRecord; // < The optional SPSS type 3
@@ -86,13 +90,40 @@ public abstract class SPSSVariable {
 	public Map<String, SPSSVariableCategory> categoryMap = new LinkedHashMap<String, SPSSVariableCategory>();
 
 	/**
+	 * Map<variable-number, ddi3 id for variable>
+	 */
+	Map<Integer, String> variableIdMap = new HashMap<Integer, String>();
+
+	/**
+	 * Map<variable-number, ddi3 id for category scheme>
+	 */
+	Map<Integer, String> categorySchemeIdMap = new HashMap<Integer, String>();
+
+	/**
+	 * Map<ddi3 id for category scheme, category scheme label>
+	 */
+	Map<String, String> categorySchemeLabelMap = new HashMap<String, String>();
+	
+	/**
+	 * Map<ddi3 id for category scheme, ',' seperated string of ddi3 id for
+	 * categores in category scheme>
+	 */
+	Map<String, String> categoryIdMap = new HashMap<String, String>();
+
+	
+	/**
+	 * Map<variable-number, ddi3 id for code scheme>
+	 */
+	Map<Integer, String> codeSchemeIdMap = new HashMap<Integer, String>();
+
+	/**
 	 * Constructor
 	 * 
 	 * @param file
 	 *            the SPSSFile this variable belongs to
 	 */
 	public SPSSVariable(SPSSFile file) {
-		this.file = file;
+		this.spssFile = file;
 	}
 
 	/**
@@ -240,18 +271,24 @@ public abstract class SPSSVariable {
 	 * Returns a default Category Scheme ID based on the file unique identifier.
 	 * 
 	 * @return a String containing the r:ID
+	 * @throws DDIFtpException
 	 */
-	public String getDDI3DefaultCategorySchemeID() {
-		return (file.getUniqueID() + "_" + file.categorySchemeIDSuffix + "_V" + this.variableNumber);
+	public String getDDI3DefaultCategorySchemeID() throws DDIFtpException {
+		// return (spssFile.getUniqueID() + "_" +
+		// spssFile.categorySchemeIDSuffix + "_V" + this.variableNumber);
+		return spssFile.createId(ElementType.CATEGORY_SCHEME);
 	}
 
 	/**
 	 * Returns a default Code Scheme ID based on the file unique identifier.
 	 * 
 	 * @return a String containing the r:ID
+	 * @throws DDIFtpException
 	 */
-	public String getDDI3DefaultCodeSchemeID() {
-		return (file.getUniqueID() + "_" + file.codeSchemeIDSuffix + "_V" + this.variableNumber);
+	public String getDDI3DefaultCodeSchemeID() throws DDIFtpException {
+		// return (spssFile.getUniqueID() + "_" + spssFile.codeSchemeIDSuffix +
+		// "_V" + this.variableNumber);
+		return spssFile.createId(ElementType.CODE_SCHEME);
 	}
 
 	/**
@@ -259,9 +296,11 @@ public abstract class SPSSVariable {
 	 * 
 	 * @param doc
 	 * @return a org.w3c.dom.Element containing the scheme
+	 * @throws DDIFtpException
 	 */
-	public Element getDDI3CategoryScheme(Document doc) {
-		return (getDDI3CategoryScheme(doc, null));
+	public Element createDDI3CategoryScheme(Document doc)
+			throws DDIFtpException {
+		return (createDDI3CategoryScheme(doc, null));
 	}
 
 	/**
@@ -270,8 +309,10 @@ public abstract class SPSSVariable {
 	 * @param doc
 	 * @param categorySchemeID
 	 * @return
+	 * @throws DDIFtpException
 	 */
-	private Element getDDI3CategoryScheme(Document doc, String categorySchemeID) {
+	private Element createDDI3CategoryScheme(Document doc,
+			String categorySchemeID) throws DDIFtpException {
 		Element scheme = null;
 		Element elem;
 
@@ -283,6 +324,12 @@ public abstract class SPSSVariable {
 			if (categorySchemeID == null)
 				categorySchemeID = getDDI3DefaultCategorySchemeID();
 			Utils.setDDIMaintainableId(scheme, categorySchemeID);
+			categorySchemeIdMap.put(this.variableNumber, categorySchemeID);
+
+			// label
+			Element schemeLabelElm = (Element) scheme
+					.appendChild(doc.createElementNS(
+							SPSSFile.DDI3_REUSABLE_NAMESPACE, "Label"));
 
 			// iterate over categories
 			int categoryNumber = 0;
@@ -290,8 +337,18 @@ public abstract class SPSSVariable {
 			// valueLabelRecord.valueLabel.keySet().iterator();
 			Iterator catIterator = categoryMap.keySet().iterator();
 
+			StringBuilder schemeLabelStrB = new StringBuilder();
+			StringBuilder categoryIds = new StringBuilder();
 			boolean missingCreated = false;
 			while (catIterator.hasNext()) {
+				// id
+				String id = spssFile.createId(ElementType.CATEGORY,
+						categoryNumber);
+				categoryIds.append(id);
+				if (catIterator.hasNext()) {
+					categoryIds.append(",");
+				}
+
 				String key = (String) catIterator.next();
 				SPSSVariableCategory cat = categoryMap.get(key);
 				if (cat.isMissing && cat.label == "") {
@@ -303,10 +360,18 @@ public abstract class SPSSVariable {
 										.createElementNS(
 												SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 												"Category"));
-						Utils.setDDIVersionableId(category, "MISSING");
+						Utils.setDDIVersionableId(category, id);
 
 						category.setAttribute("missing", "true");
 						missingCreated = true;
+						// category label
+						elem = (Element) category.appendChild(doc
+								.createElementNS(
+										SPSSFile.DDI3_REUSABLE_NAMESPACE,
+										"Label"));
+						elem.setTextContent("Missing");
+						spssFile.setLangAttr(elem);
+						schemeLabelStrB.append("Missing");
 					}
 				} else {
 					categoryNumber++;
@@ -315,8 +380,10 @@ public abstract class SPSSVariable {
 							.createElementNS(
 									SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 									"Category"));
+
 					Utils.setDDIVersionableId(category,
-							file.variableCategoryPrefix + "_" + categoryNumber);
+					// spssFile.variableCategoryPrefix + "_" + categoryNumber);
+							id);
 					// missing?
 					if (cat.isMissing)
 						category.setAttribute("missing", "true");
@@ -324,8 +391,26 @@ public abstract class SPSSVariable {
 					elem = (Element) category.appendChild(doc.createElementNS(
 							SPSSFile.DDI3_REUSABLE_NAMESPACE, "Label"));
 					elem.setTextContent(cat.label);
+					schemeLabelStrB.append(cat.label);
+					if (catIterator.hasNext()) {
+						schemeLabelStrB.append(", ");
+					}
 				}
 			}
+
+			// category scheme label
+			String schemelabelMin = schemeLabelStrB.substring(
+					0,
+					schemeLabelStrB.length() < LABEL_INFO_LENGHT ? schemeLabelStrB
+							.length() : LABEL_INFO_LENGHT)
+					+ "... , " + categoryNumber;
+			schemeLabelElm
+					.setTextContent(schemelabelMin);
+			spssFile.setLangAttr(schemeLabelElm);
+			categorySchemeLabelMap.put(categorySchemeID, schemelabelMin);
+			
+			// category ids
+			categoryIdMap.put(categorySchemeID, categoryIds.toString());
 		}
 		return (scheme);
 	}
@@ -339,11 +424,12 @@ public abstract class SPSSVariable {
 	 * @return a org.w3c.dom.Element containing the scheme
 	 * @throws SPSSFileException
 	 * @throws DOMException
+	 * @throws DDIFtpException
 	 */
-	public Element getDDI3CodeScheme(Document doc,
+	public Element createDDI3CodeScheme(Document doc,
 			boolean createCategoryReference) throws DOMException,
-			SPSSFileException {
-		return (getDDI3CodeScheme(doc, null, null, createCategoryReference));
+			SPSSFileException, DDIFtpException {
+		return (createDDI3CodeScheme(doc, null, null, createCategoryReference));
 	}
 
 	/**
@@ -352,13 +438,14 @@ public abstract class SPSSVariable {
 	 * @param doc
 	 * @param categorySchemeID
 	 * @param codeSchemeID
-	 * @return
+	 * @return code scheme
 	 * @throws SPSSFileException
 	 * @throws DOMException
+	 * @throws DDIFtpException
 	 */
-	private Element getDDI3CodeScheme(Document doc, String categorySchemeID,
+	private Element createDDI3CodeScheme(Document doc, String categorySchemeID,
 			String codeSchemeID, boolean createCategoryReference)
-			throws DOMException, SPSSFileException {
+			throws DOMException, SPSSFileException, DDIFtpException {
 		Element scheme = null;
 		Element elem;
 
@@ -367,11 +454,18 @@ public abstract class SPSSVariable {
 			scheme = doc.createElementNS(
 					SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE, "CodeScheme");
 			if (categorySchemeID == null)
-				categorySchemeID = getDDI3DefaultCategorySchemeID();
+				categorySchemeID = categorySchemeIdMap.get(this.variableNumber);
 			if (codeSchemeID == null)
 				codeSchemeID = getDDI3DefaultCodeSchemeID();
 			Utils.setDDIMaintainableId(scheme, codeSchemeID);
+			codeSchemeIdMap.put(this.variableNumber, codeSchemeID);
 
+			// code scheme label
+			elem = (Element) scheme.appendChild(doc.createElementNS(
+					SPSSFile.DDI3_REUSABLE_NAMESPACE, "Label"));
+			elem.setTextContent(categorySchemeLabelMap.get(categorySchemeID));
+			spssFile.setLangAttr(elem);
+			
 			// categorySchemeReference
 			if (createCategoryReference) {
 				Element categorySchemeReference = (Element) scheme
@@ -383,6 +477,10 @@ public abstract class SPSSVariable {
 								SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
 				elem.setTextContent(categorySchemeID);
 			}
+			
+			// category refs
+			String[] categoryIds = categoryIdMap.get(categorySchemeID).split(
+					",");
 
 			// iterate over categories
 			Iterator catIterator = categoryMap.keySet().iterator();
@@ -397,7 +495,7 @@ public abstract class SPSSVariable {
 								.createElementNS(
 										SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 										"Code"));
-
+				
 				// category reference
 				Element categoryReference = (Element) code.appendChild(doc
 						.createElementNS(
@@ -406,14 +504,9 @@ public abstract class SPSSVariable {
 				elem = (Element) categoryReference
 						.appendChild(doc.createElementNS(
 								SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
-				if (cat.isMissing && cat.label == "") {
-					elem.setTextContent("MISSING");
-				} else {
-					categoryNumber++;
-					elem.setTextContent(file.variableCategoryPrefix + "_"
-							+ categoryNumber);
-				}
-
+				elem.setTextContent(categoryIds[categoryNumber]);
+				categoryNumber++;
+				
 				// value
 				elem = (Element) code.appendChild(doc.createElementNS(
 						SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE, "Value"));
@@ -457,7 +550,7 @@ public abstract class SPSSVariable {
 		// scheme reference in GrossRecordStructure to avoid unnecessary repeats
 		elem = (Element) varReference.appendChild(doc.createElementNS(
 				SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
-		elem.setTextContent(file.variableIDPrefix + this.variableNumber);
+		elem.setTextContent(variableIdMap.get(this.variableNumber));
 
 		// physical location
 		Element physicalLocation = (Element) dataItem.appendChild(doc
@@ -504,7 +597,7 @@ public abstract class SPSSVariable {
 						"VariableReference"));
 		elem = (Element) varReference.appendChild(doc.createElementNS(
 				SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
-		elem.setTextContent(file.variableIDPrefix + this.variableNumber);
+		elem.setTextContent(variableIdMap.get(this.variableNumber));
 
 		elem = (Element) dataItem.appendChild(doc.createElementNS(
 				SPSSFile.DDI3_PROPRIETARY_RECORD_NAMESPACE,
@@ -577,26 +670,30 @@ public abstract class SPSSVariable {
 	 * 
 	 * @param doc
 	 * @return a org.w3c.dom.Element containing the Variable
+	 * @throws DDIFtpException
 	 */
-	public Element getDDI3Variable(Document doc) {
-		return (getDDI3Variable(doc, null));
+	public Element createDDI3Variable(Document doc) throws DDIFtpException {
+		return (createDDI3Variable(doc, null));
 	}
 
 	/**
-	 * Generates a DDI3 Variable element for this variable
+	 * Create a DDI3 Variable element for this variable
 	 * 
 	 * @param doc
 	 * @param codeSchemeReferenceID
 	 * @return a org.w3c.dom.Element containing the Variable
+	 * @throws DDIFtpException
 	 */
-	private Element getDDI3Variable(Document doc, String codeSchemeReferenceID) {
+	private Element createDDI3Variable(Document doc,
+			String codeSchemeReferenceID) throws DDIFtpException {
 		Element var = null;
 		Element elem;
 
 		var = doc.createElementNS(SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 				"Variable");
-		Utils.setDDIVersionableId(var, file.variableIDPrefix
-				+ this.variableNumber);
+		variableIdMap.put(variableNumber,
+				spssFile.createId(ElementType.VARIABLE, variableNumber));
+		Utils.setDDIVersionableId(var, variableIdMap.get(variableNumber));
 
 		// variable name
 		elem = (Element) var.appendChild(doc.createElementNS(
@@ -642,7 +739,8 @@ public abstract class SPSSVariable {
 						.appendChild(doc.createElementNS(
 								SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
 				if (codeSchemeReferenceID == null)
-					codeSchemeReferenceID = getDDI3DefaultCodeSchemeID();
+					codeSchemeReferenceID = codeSchemeIdMap
+							.get(this.variableNumber);
 				elem.setTextContent(codeSchemeReferenceID);
 			} else {
 				String dataType = getDDI3DataType();
