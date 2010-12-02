@@ -9,7 +9,8 @@ import org.w3c.dom.ls.DOMImplementationLS;
 import org.w3c.dom.ls.LSSerializer;
 
 public class SpssFileTest {
-	File file = new File("resources/maa-ikke-udleveres-spss21627.sav");
+	String path = "resources/sps14069.sav";
+	File file = new File(path);
 	String outFilePath = file.getName() + ".xml";
 
 	@Test
@@ -21,9 +22,9 @@ public class SpssFileTest {
 		exportOptions.createCategories = true;
 		Document doc = spssFile
 				.getDDI3LogicalProduct(exportOptions, null, null);
-		
-		System.out.println(Utils.nodeToString(doc));
 
+		System.out.println(Utils.nodeToString(doc));
+		System.out.println(outFilePath);
 		Utils.writeXmlFile(doc, outFilePath);
 	}
 }
