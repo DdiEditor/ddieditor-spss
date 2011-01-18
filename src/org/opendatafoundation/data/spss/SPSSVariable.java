@@ -708,11 +708,11 @@ public abstract class SPSSVariable {
 		elem.setTextContent(this.getLabel());
 
 		// variable label (short name)
-		elem = (Element) var.appendChild(doc.createElementNS(
-				SPSSFile.DDI3_REUSABLE_NAMESPACE, "Label"));
-		elem.setAttribute("type", "name");
-		elem.setAttribute("maxLength", "8");
-		elem.setTextContent(this.getShortName());
+		// elem = (Element) var.appendChild(doc.createElementNS(
+		// SPSSFile.DDI3_REUSABLE_NAMESPACE, "Label"));
+		// elem.setAttribute("type", "name");
+		// elem.setAttribute("maxLength", "8");
+		// elem.setTextContent(this.getShortName());
 
 		// representation
 		if (hasValueLabels() || getDDI3RepresentationType() != null) {
