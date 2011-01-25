@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Ddieditor-spss
 Bundle-SymbolicName: ddieditor-spss;singleton:=true
-Bundle-Version: 0.2.0
+Bundle-Version: 0.3.0
 Bundle-Vendor: Danish Data Archve
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Export-Package: org.opendatafoundation.data,
