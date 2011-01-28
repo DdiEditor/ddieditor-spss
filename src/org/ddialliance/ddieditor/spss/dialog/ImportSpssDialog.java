@@ -41,7 +41,7 @@ public class ImportSpssDialog extends Dialog {
 		this.getShell().setText(Translator.trans("spss.dialog.title"));
 
 		// group
-		Editor editor = new Editor();
+		Editor editor = new Editor("");
 		Group group = editor.createGroup(parent,
 				Translator.trans("spss.dialog.group"));
 		group.setLayoutData(new GridData(700, 400));
