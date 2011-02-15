@@ -8,13 +8,16 @@ import org.ddialliance.ddieditor.model.lightxmlobject.LightXmlObjectType;
 import org.ddialliance.ddieditor.spss.controler.SpssImportControler;
 import org.ddialliance.ddieditor.spss.dialog.ImportSpssDialog;
 import org.ddialliance.ddieditor.spss.osgi.Activator;
+import org.ddialliance.ddieditor.ui.editor.category.CategorySchemeEditor;
+import org.ddialliance.ddieditor.ui.editor.code.CodeSchemeEditor;
+import org.ddialliance.ddieditor.ui.editor.variable.VariableEditor;
 import org.ddialliance.ddieditor.ui.perspective.InfoPerspective;
 import org.ddialliance.ddieditor.ui.preference.PreferenceConstants;
 import org.ddialliance.ddieditor.ui.util.DialogUtil;
 import org.ddialliance.ddieditor.ui.view.InfoView;
 import org.ddialliance.ddieditor.ui.view.Messages;
 import org.ddialliance.ddieditor.ui.view.View;
-import org.ddialliance.ddiftp.util.DDIFtpException;
+import org.ddialliance.ddieditor.ui.view.ViewManager;
 import org.ddialliance.ddiftp.util.Translator;
 import org.ddialliance.ddiftp.util.log.Log;
 import org.ddialliance.ddiftp.util.log.LogFactory;
@@ -159,16 +162,11 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 					e.printStackTrace();
 				}
 			}
-
-			// refresh in async to avoid swt thread
-			// violation
-			final View view = (View) iViewPart;
-			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					view.refreshView();
-				}
-			});
+			
+			// refresh views
+			String[] updateViewsIds = new String[] { VariableEditor.ID, CodeSchemeEditor.ID, CategorySchemeEditor.ID };
+			ViewManager.getInstance().addViewsToRefresh(updateViewsIds);
+			ViewManager.getInstance().refesh();
 		}
 		return null;
 	}
