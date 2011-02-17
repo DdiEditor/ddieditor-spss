@@ -1,22 +1,21 @@
 package org.ddialliance.ddieditor.spss.command;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 
 import org.ddialliance.ddieditor.model.DdiManager;
 import org.ddialliance.ddieditor.model.lightxmlobject.LightXmlObjectType;
+import org.ddialliance.ddieditor.persistenceaccess.maintainablelabel.MaintainableLightLabelQueryResult;
 import org.ddialliance.ddieditor.spss.controler.SpssImportControler;
-import org.ddialliance.ddieditor.spss.dialog.ImportSpssDialog;
 import org.ddialliance.ddieditor.spss.osgi.Activator;
+import org.ddialliance.ddieditor.spss.wizard.ImportSpssWizard;
 import org.ddialliance.ddieditor.ui.editor.category.CategorySchemeEditor;
 import org.ddialliance.ddieditor.ui.editor.code.CodeSchemeEditor;
-import org.ddialliance.ddieditor.ui.editor.variable.VariableEditor;
-import org.ddialliance.ddieditor.ui.perspective.InfoPerspective;
+import org.ddialliance.ddieditor.ui.editor.variable.VariableSchemeEditor;
 import org.ddialliance.ddieditor.ui.preference.PreferenceConstants;
 import org.ddialliance.ddieditor.ui.util.DialogUtil;
-import org.ddialliance.ddieditor.ui.view.InfoView;
 import org.ddialliance.ddieditor.ui.view.Messages;
-import org.ddialliance.ddieditor.ui.view.View;
 import org.ddialliance.ddieditor.ui.view.ViewManager;
 import org.ddialliance.ddiftp.util.Translator;
 import org.ddialliance.ddiftp.util.log.Log;
@@ -25,15 +24,14 @@ import org.ddialliance.ddiftp.util.log.LogType;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.runtime.preferences.ConfigurationScope;
-import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.ui.IViewPart;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.PartInitException;
+import org.eclipse.jface.window.Window;
+import org.eclipse.jface.wizard.WizardDialog;
+import org.eclipse.swt.custom.BusyIndicator;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.WorkbenchException;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
+import org.opendatafoundation.data.FileFormatInfo;
+import org.opendatafoundation.data.FileFormatInfo.Format;
 import org.opendatafoundation.data.Utils;
 import org.opendatafoundation.data.spss.ExportOptions;
 import org.opendatafoundation.data.spss.SPSSFile;
@@ -47,77 +45,173 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		ImportSpssDialog dialog = new ImportSpssDialog(PlatformUI
-				.getWorkbench().getDisplay().getActiveShell());
+		// open dialog
+		ImportSpssWizard importSpssWizard = new ImportSpssWizard();
+		WizardDialog dialog = new WizardDialog(PlatformUI.getWorkbench()
+				.getDisplay().getActiveShell(), importSpssWizard);
+
 		int returnCode = dialog.open();
-		if (returnCode == Dialog.CANCEL) {
-			return null;
+		if (returnCode != Window.CANCEL) {
+			// import
+			SpssImportRunnable longJob = new SpssImportRunnable(
+					importSpssWizard);
+			BusyIndicator.showWhile(PlatformUI.getWorkbench().getDisplay(),
+					longJob);
+
+			// refresh
+			ViewManager.getInstance().addViewsToRefresh(
+					new String[] { CodeSchemeEditor.ID,
+							CategorySchemeEditor.ID, VariableSchemeEditor.ID });
+			ViewManager.getInstance().refesh();
+		}
+		return null;
+	}
+
+	/**
+	 * Runnable wrapping spss import
+	 */
+	class SpssImportRunnable implements Runnable {
+		ImportSpssWizard importSpssWizard;
+
+		public SpssImportRunnable(ImportSpssWizard importSpssWizard) {
+			this.importSpssWizard = importSpssWizard;
 		}
 
-		// check prefs
-		if (dialog.selectedResource == null && dialog.fileName != null) {
-			new MessageDialog(null,
-					Translator.trans("jsie.selectedresourcenull.title"), null,
-					Translator.trans("jsie.selectedresourcenull.message"),
-					MessageDialog.ERROR, new String[] { "Ok" }, 0).open();
-			returnCode = dialog.open();
-			if (returnCode == Dialog.CANCEL) {
-				return null;
-			}
-		}
-
-		// confirm
-		if (MessageDialog
-				.openConfirm(
-						PlatformUI.getWorkbench().getDisplay().getActiveShell(),
-						Messages.getString("spss.confirm.title"),
-						Translator.trans("spss.confirm.import",
-								new Object[] { dialog.fileName,
-										dialog.selectedResource.getOrgName() }))) {
+		@Override
+		public void run() {
+			Document dom;
+			String logicalProductID = null;
 
 			// import
 			SPSSFile spssFile = null;
 			try {
-				spssFile = new SPSSFile(dialog.fileName);
-				if (dialog.createMetaData) {
+				// check parent
+				List<LightXmlObjectType> parentList = DdiManager.getInstance()
+						.checkForParent(
+								SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
+								"LogicalProduct");
+				if (parentList.isEmpty()) {
+					MessageDialog.openConfirm(PlatformUI.getWorkbench()
+							.getDisplay().getActiveShell(), Messages
+							.getString("spss.confirm.title"), Translator
+							.trans("spss.confirm.createdditoimportinto"));
+					return;
+				}
+
+				// init spss file
+				DdiManager.getInstance().setWorkingDocument(
+						importSpssWizard.selectedResource.getOrgName());
+				spssFile = new SPSSFile(importSpssWizard.spssFile);
+
+				// logical product
+				if (importSpssWizard.variable) {
 					spssFile.loadMetadata();
 					ExportOptions exportOptions = new ExportOptions();
 					exportOptions.createCategories = true;
 
-					Document dom = spssFile.getDDI3LogicalProduct(
-							exportOptions, null, preferenceStore
+					dom = spssFile.getDDI3LogicalProduct(exportOptions, null,
+							preferenceStore
 									.getString(PreferenceConstants.DDI_AGENCY));
 
-					DdiManager.getInstance().setWorkingDocument(
-							dialog.selectedResource.getOrgName());
-					List<LightXmlObjectType> parentList = DdiManager
-							.getInstance().checkForParent(
-									SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
-									"LogicalProduct");
-					if (!parentList.isEmpty()) {
+					// create logical product
+					DdiManager.getInstance().createElement(
+							Utils.nodeToString(dom).toString(),
+							parentList.get(0).getId(),
+							parentList.get(0).getVersion(),
+							parentList.get(0).getElement(), null);
+				}
+
+				// physical data product
+				if (importSpssWizard.variableRec) {
+					if (!spssFile.isMetadataLoaded) {
+						spssFile.loadMetadata();
+
+						// add varirefs ?
+					}
+
+					logicalProductID = spssFile.getLogicalProductDdi3Id();
+					if (logicalProductID == null) {
+						// parent list
+						List<LightXmlObjectType> logpList = DdiManager
+								.getInstance()
+								.getLogicalProductsLight(null, null, null, null)
+								.getLightXmlObjectList()
+								.getLightXmlObjectList();
+
+						if (logpList.isEmpty()) {
+							MessageDialog
+									.openConfirm(
+											PlatformUI.getWorkbench()
+													.getDisplay()
+													.getActiveShell(),
+											Messages.getString("spss.confirm.title"),
+											Translator
+													.trans("spss.confirm.createdditoimportinto"));
+							spssFile.close();
+							return;
+						} else {
+							// TODO add dialog with list to choose from is more
+							// than one ...
+							logicalProductID = logpList
+									.get(logpList.size() - 1).getId();
+						}
+					}
+
+					Format[] format = new Format[] {
+					// FileFormatInfo.Format.SPSS,
+					FileFormatInfo.Format.ASCII };
+					for (int i = 0; i < format.length; i++) {
+						dom = spssFile
+								.getDDI3PhysicalDataProduct(new FileFormatInfo(
+										format[i]), logicalProductID);
+
+						// create physical data product
 						DdiManager.getInstance().createElement(
 								Utils.nodeToString(dom).toString(),
 								parentList.get(0).getId(),
 								parentList.get(0).getVersion(),
 								parentList.get(0).getElement(), null);
-					} else {
-						MessageDialog.openConfirm(PlatformUI.getWorkbench()
-								.getDisplay().getActiveShell(), Messages
-								.getString("spss.confirm.title"), Translator
-								.trans("spss.confirm.createdditoimportinto"));
-						spssFile.close();
-						return null;
 					}
 				}
-				if (dialog.createFrequencies) {
-					MessageDialog
-							.openConfirm(
-									PlatformUI.getWorkbench().getDisplay()
-											.getActiveShell(),
-									Messages.getString("spss.confirm.title"),
-									Translator
-											.trans("spss.confirm.createfrequenciesnotimplemented"));
-					spssFile.loadData();
+
+				// frequencies
+				// if (importSpssWizard.frequency) {
+				// TODO use phyton spss oms export plus xslt import
+				// MessageDialog
+				// .openConfirm(
+				// PlatformUI.getWorkbench().getDisplay()
+				// .getActiveShell(),
+				// Messages.getString("spss.confirm.title"),
+				// Translator
+				// .trans("spss.confirm.createfrequenciesnotimplemented"));
+				// }
+
+				// dat file and physical instance
+				if (importSpssWizard.variableDataFile) {
+					if (!spssFile.isMetadataLoaded) {
+						spssFile.loadMetadata();
+					}
+					if (!spssFile.isDataLoaded) {
+						spssFile.loadData();
+					}
+					// create dat file - dat file location
+					// importSpssWizard.dataFile
+					if (spssFile.getRecordLayoutSchemeDdi3Id() == null) {
+						MaintainableLightLabelQueryResult m = DdiManager
+								.getInstance().getRecordLayoutSchemeLabel(null,
+										null, null, null);
+
+						System.out.println(m);
+					}
+
+					// String[] fileSplit =
+					// importSpssWizard.dataFile.split("/");
+					// fileSplit[fileSplit.length - 2]
+
+					// TODO hokusPoku.dat ;- )
+					dom = spssFile.getDDI3PhysicalInstance(new URI("file://"
+							+ "hokusPoku.dat"),
+							new FileFormatInfo(Format.ASCII));
 				}
 			} catch (Exception e) {
 				DialogUtil.errorDialog(PlatformUI.getWorkbench().getDisplay()
@@ -132,42 +226,6 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 					}
 				}
 			}
-
-			// update info view
-			// TODO refactor boiler plate code to refresh a
-			// view into a rcp command
-			final IWorkbenchWindow[] workbenchWindows = PlatformUI
-					.getWorkbench().getWorkbenchWindows();
-
-			IWorkbenchPage workbenchPage = workbenchWindows[0].getActivePage();
-			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						PlatformUI.getWorkbench().showPerspective(
-								InfoPerspective.ID, workbenchWindows[0]);
-					} catch (WorkbenchException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
-			});
-			IViewPart iViewPart = workbenchWindows[0].getActivePage().findView(
-					InfoView.ID);
-			if (iViewPart == null) {
-				try {
-					iViewPart = workbenchPage.showView(InfoView.ID);
-				} catch (PartInitException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			
-			// refresh views
-			String[] updateViewsIds = new String[] { VariableEditor.ID, CodeSchemeEditor.ID, CategorySchemeEditor.ID };
-			ViewManager.getInstance().addViewsToRefresh(updateViewsIds);
-			ViewManager.getInstance().refesh();
 		}
-		return null;
 	}
 }
