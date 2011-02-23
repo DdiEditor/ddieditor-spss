@@ -103,14 +103,13 @@ public abstract class SPSSVariable {
 	 * Map<ddi3 id for category scheme, category scheme label>
 	 */
 	Map<String, String> categorySchemeLabelMap = new HashMap<String, String>();
-	
+
 	/**
 	 * Map<ddi3 id for category scheme, ',' seperated string of ddi3 id for
 	 * categores in category scheme>
 	 */
 	Map<String, String> categoryIdMap = new HashMap<String, String>();
 
-	
 	/**
 	 * Map<variable-number, ddi3 id for code scheme>
 	 */
@@ -399,16 +398,16 @@ public abstract class SPSSVariable {
 			}
 
 			// category scheme label
-			String schemelabelMin = schemeLabelStrB.substring(
-					0,
-					schemeLabelStrB.length() < LABEL_INFO_LENGHT ? schemeLabelStrB
-							.length() : LABEL_INFO_LENGHT)
+			String schemelabelMin = schemeLabelStrB
+					.substring(
+							0,
+							schemeLabelStrB.length() < LABEL_INFO_LENGHT ? schemeLabelStrB
+									.length() : LABEL_INFO_LENGHT)
 					+ "... , " + categoryNumber;
-			schemeLabelElm
-					.setTextContent(schemelabelMin);
+			schemeLabelElm.setTextContent(schemelabelMin);
 			spssFile.setLangAttr(schemeLabelElm);
 			categorySchemeLabelMap.put(categorySchemeID, schemelabelMin);
-			
+
 			// category ids
 			categoryIdMap.put(categorySchemeID, categoryIds.toString());
 		}
@@ -465,7 +464,7 @@ public abstract class SPSSVariable {
 					SPSSFile.DDI3_REUSABLE_NAMESPACE, "Label"));
 			elem.setTextContent(categorySchemeLabelMap.get(categorySchemeID));
 			spssFile.setLangAttr(elem);
-			
+
 			// categorySchemeReference
 			if (createCategoryReference) {
 				Element categorySchemeReference = (Element) scheme
@@ -476,49 +475,49 @@ public abstract class SPSSVariable {
 						.appendChild(doc.createElementNS(
 								SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
 				elem.setTextContent(categorySchemeID);
-			}
-			
-			// category refs
-			String[] categoryIds = categoryIdMap.get(categorySchemeID).split(
-					",");
 
-			// iterate over categories
-			Iterator catIterator = categoryMap.keySet().iterator();
-			int categoryNumber = 0;
-			while (catIterator.hasNext()) {
-				String key = (String) catIterator.next();
-				SPSSVariableCategory cat = categoryMap.get(key);
+				// category refs
+				String[] categoryIds = categoryIdMap.get(categorySchemeID)
+						.split(",");
 
-				// Code element
-				Element code = (Element) scheme
-						.appendChild(doc
-								.createElementNS(
-										SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
-										"Code"));
-				
-				// category reference
-				Element categoryReference = (Element) code.appendChild(doc
-						.createElementNS(
-								SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
-								"CategoryReference"));
-				elem = (Element) categoryReference
-						.appendChild(doc.createElementNS(
-								SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
-				elem.setTextContent(categoryIds[categoryNumber]);
-				categoryNumber++;
-				
-				// value
-				elem = (Element) code.appendChild(doc.createElementNS(
-						SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE, "Value"));
-				elem.setTextContent(cat.strValue);
-				/*
-				 * if(this.type==VariableType.NUMERIC) { // convert key into a
-				 * numeric value and then into a trimmed string double value =
-				 * SPSSUtils.byte8ToDouble(key);
-				 * elem.setTextContent(((SPSSNumericVariable)
-				 * this).valueToString(value).trim()); } else { // convert
-				 * value-key to string elem.setTextContent(new String(key)); }
-				 */
+				// iterate over categories
+				Iterator catIterator = categoryMap.keySet().iterator();
+				int categoryNumber = 0;
+				while (catIterator.hasNext()) {
+					String key = (String) catIterator.next();
+					SPSSVariableCategory cat = categoryMap.get(key);
+
+					// Code element
+					Element code = (Element) scheme.appendChild(doc
+							.createElementNS(
+									SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
+									"Code"));
+
+					// category reference
+					Element categoryReference = (Element) code.appendChild(doc
+							.createElementNS(
+									SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
+									"CategoryReference"));
+					elem = (Element) categoryReference.appendChild(doc
+							.createElementNS(SPSSFile.DDI3_REUSABLE_NAMESPACE,
+									"ID"));
+					elem.setTextContent(categoryIds[categoryNumber]);
+					categoryNumber++;
+
+					// value
+					elem = (Element) code.appendChild(doc.createElementNS(
+							SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE, "Value"));
+					elem.setTextContent(cat.strValue);
+					/*
+					 * if(this.type==VariableType.NUMERIC) { // convert key into
+					 * a numeric value and then into a trimmed string double
+					 * value = SPSSUtils.byte8ToDouble(key);
+					 * elem.setTextContent(((SPSSNumericVariable)
+					 * this).valueToString(value).trim()); } else { // convert
+					 * value-key to string elem.setTextContent(new String(key));
+					 * }
+					 */
+				}
 			}
 		}
 		return (scheme);
@@ -533,6 +532,7 @@ public abstract class SPSSVariable {
 	 * @return a org.w3c.dom.Element containing the data item
 	 * @throws SPSSFileException
 	 * @throws DOMException
+	 * @throws DDIFtpException
 	 */
 	public Element getDDI3DataItem(Document doc, FileFormatInfo dataFormat,
 			int offset) throws DOMException, SPSSFileException {
@@ -559,6 +559,7 @@ public abstract class SPSSVariable {
 		elem = (Element) physicalLocation.appendChild(doc.createElementNS(
 				SPSSFile.DDI3_PHYSICAL_PRODUCT_NAMESPACE, "StorageFormat"));
 		elem.setTextContent(this.getSPSSFormat());
+
 		elem = (Element) physicalLocation.appendChild(doc.createElementNS(
 				SPSSFile.DDI3_PHYSICAL_PRODUCT_NAMESPACE, "StartPosition"));
 		elem.setTextContent("" + offset);
