@@ -4,10 +4,10 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 
+import org.apache.xmlbeans.XmlObject;
 import org.ddialliance.ddieditor.model.DdiManager;
 import org.ddialliance.ddieditor.model.lightxmlobject.LightXmlObjectType;
 import org.ddialliance.ddieditor.persistenceaccess.maintainablelabel.MaintainableLightLabelQueryResult;
-import org.ddialliance.ddieditor.spss.controler.SpssImportControler;
 import org.ddialliance.ddieditor.spss.osgi.Activator;
 import org.ddialliance.ddieditor.spss.wizard.ImportSpssWizard;
 import org.ddialliance.ddieditor.ui.editor.category.CategorySchemeEditor;
@@ -39,7 +39,7 @@ import org.w3c.dom.Document;
 
 public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 	private Log log = LogFactory.getLog(LogType.SYSTEM, ImportSpss.class);
-	SpssImportControler spssImportControler = null;
+
 	ScopedPreferenceStore preferenceStore = new ScopedPreferenceStore(
 			new ConfigurationScope(), "ddieditor-ui");
 
@@ -79,6 +79,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 
 		@Override
 		public void run() {
+			XmlObject insert;
 			Document dom;
 			String logicalProductID = null;
 
@@ -86,11 +87,11 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 			SPSSFile spssFile = null;
 			try {
 				// check parent
-				List<LightXmlObjectType> parentList = DdiManager.getInstance()
+				List<LightXmlObjectType> studList = DdiManager.getInstance()
 						.checkForParent(
 								SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 								"LogicalProduct");
-				if (parentList.isEmpty()) {
+				if (studList.isEmpty()) {
 					MessageDialog.openConfirm(PlatformUI.getWorkbench()
 							.getDisplay().getActiveShell(), Messages
 							.getString("spss.confirm.title"), Translator
@@ -112,13 +113,25 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 					dom = spssFile.getDDI3LogicalProduct(exportOptions, null,
 							preferenceStore
 									.getString(PreferenceConstants.DDI_AGENCY));
-
-					// create logical product
+					
+					// log.debug(Utils.nodeToString(dom).toString());
 					DdiManager.getInstance().createElement(
 							Utils.nodeToString(dom).toString(),
-							parentList.get(0).getId(),
-							parentList.get(0).getVersion(),
-							parentList.get(0).getElement(), null);
+							studList.get(0).getId(),
+							studList.get(0).getVersion(),
+							studList.get(0).getElement(),
+							new String[] { "ConceptualComponent" });
+					
+					// insert =
+					// XmlObject.Factory.parse(Utils.nodeToString(dom).toString());
+					// dom = null;
+					// DdiManager.getInstance().createElement(
+					// Utils.nodeToString(dom).toString(),
+					// //insert,
+					// studList.get(0).getId(),
+					// studList.get(0).getVersion(),
+					// studList.get(0).getElement(),
+					// new String[] { "ConceptualComponent" });
 				}
 
 				// physical data product
@@ -126,7 +139,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 					if (!spssFile.isMetadataLoaded) {
 						spssFile.loadMetadata();
 
-						// add varirefs ?
+						// TODO add varirefs
 					}
 
 					logicalProductID = spssFile.getLogicalProductDdi3Id();
@@ -157,6 +170,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 						}
 					}
 
+					// ascii only
 					Format[] format = new Format[] {
 					// FileFormatInfo.Format.SPSS,
 					FileFormatInfo.Format.ASCII };
@@ -165,12 +179,12 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 								.getDDI3PhysicalDataProduct(new FileFormatInfo(
 										format[i]), logicalProductID);
 
-						// create physical data product
 						DdiManager.getInstance().createElement(
 								Utils.nodeToString(dom).toString(),
-								parentList.get(0).getId(),
-								parentList.get(0).getVersion(),
-								parentList.get(0).getElement(), null);
+								studList.get(0).getId(),
+								studList.get(0).getVersion(),
+								studList.get(0).getElement(),
+								new String[] { "LogicalProduct" });
 					}
 				}
 
@@ -187,7 +201,8 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 				// }
 
 				// dat file and physical instance
-				if (importSpssWizard.variableDataFile) {
+				// if (importSpssWizard.variableDataFile) {
+				if (false) {
 					if (!spssFile.isMetadataLoaded) {
 						spssFile.loadMetadata();
 					}
