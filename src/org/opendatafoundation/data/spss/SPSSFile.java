@@ -52,9 +52,9 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 
+import org.ddialliance.ddi3.xml.xmlbeans.reusable.ReferenceType;
 import org.ddialliance.ddieditor.logic.identification.IdentificationGenerator;
 import org.ddialliance.ddieditor.logic.identification.IdentificationManager;
-import org.ddialliance.ddieditor.model.DdiManager;
 import org.ddialliance.ddieditor.ui.model.ElementType;
 import org.ddialliance.ddiftp.util.DDIFtpException;
 import org.opendatafoundation.data.FileFormatInfo;
@@ -83,7 +83,7 @@ public class SPSSFile extends RandomAccessFile {
 	public static final String DDI3_LOGICAL_PRODUCT_NAMESPACE = "ddi:logicalproduct:3_1";
 	public static final String DDI3_PHYSICAL_PRODUCT_NAMESPACE = "ddi:physicaldataproduct:3_1";
 	public static final String DDI3_PHYSICAL_INSTANCE_NAMESPACE = "ddi:physicalinstance:3_1";
-	public static final String DDI3_PROPRIETARY_RECORD_NAMESPACE = "ddi:physicaldataproduct/proprietary:3_1_Beta";
+	public static final String DDI3_PROPRIETARY_RECORD_NAMESPACE = "ddi:physicaldataproduct_proprietary:3_1";
 	public static final String DDI3_REUSABLE_NAMESPACE = "ddi:reusable:3_1";
 	public static final String DDI3_STUDY_UNIT_NAMESPACE = "ddi:studyunit:3_1";
 
@@ -347,7 +347,7 @@ public class SPSSFile extends RandomAccessFile {
 				elementType.getIdPrefix() + idGenerator.getDelimiter()
 						+ localId, "");
 	}
-	
+
 	public void setLangAttr(Element element) {
 		// TODO
 	}
@@ -499,7 +499,7 @@ public class SPSSFile extends RandomAccessFile {
 		return (doc);
 	}
 
-	String logicalProductDdi3Id = null;
+	private String logicalProductDdi3Id = null;
 
 	/**
 	 * Returns a default Physical Data Product identifier based on the file
@@ -510,13 +510,13 @@ public class SPSSFile extends RandomAccessFile {
 	 */
 	public String getDDI3DefaultLogicalProductID() throws DDIFtpException {
 		// return (this.getUniqueID() + "_" + this.logicalProductIDSuffix);
-		if (logicalProductDdi3Id == null) {
-			logicalProductDdi3Id = IdentificationManager
+		if (getLogicalProductDdi3Id() == null) {
+			setLogicalProductDdi3Id(IdentificationManager
 					.getInstance()
 					.getIdentificationGenerator()
-					.generateId(ElementType.LOGICAL_PRODUCT.getIdPrefix(), null);
+					.generateId(ElementType.LOGICAL_PRODUCT.getIdPrefix(), null));
 		}
-		return logicalProductDdi3Id;
+		return getLogicalProductDdi3Id();
 
 	}
 
@@ -597,6 +597,14 @@ public class SPSSFile extends RandomAccessFile {
 
 	String recordLayoutSchemeDdi3Id = null;
 
+	public String getRecordLayoutSchemeDdi3Id() {
+		return recordLayoutSchemeDdi3Id;
+	}
+
+	public void setRecordLayoutSchemeDdi3Id(String recordLayoutSchemeDdi3Id) {
+		this.recordLayoutSchemeDdi3Id = recordLayoutSchemeDdi3Id;
+	}
+
 	/**
 	 * Returns a default Record Layout Scheme identifier based on the file
 	 * unique identifier and the data format.
@@ -640,6 +648,8 @@ public class SPSSFile extends RandomAccessFile {
 		return variableSchemeId;
 	}
 
+	ReferenceType logicalRecordRef;
+
 	/**
 	 * Creates a DDI 3.1 LogiclaProduct XML Document for this file.
 	 * 
@@ -672,7 +682,8 @@ public class SPSSFile extends RandomAccessFile {
 					.createElementNS(DDI3_LOGICAL_PRODUCT_NAMESPACE,
 							"LogicalProduct"));
 
-			Utils.setDDIMaintainableId(logicalProduct,getDDI3DefaultLogicalProductID());
+			Utils.setDDIMaintainableId(logicalProduct,
+					getDDI3DefaultLogicalProductID());
 
 			// Create a DataRelationship with a logical record containing all
 			// variables
@@ -689,6 +700,7 @@ public class SPSSFile extends RandomAccessFile {
 			Utils.setDDIIdentifiableId(logicalRecord,
 					createId(ElementType.LOGICAL_RECORD));
 			logicalRecord.setAttribute("hasLocator", "false");
+			logicalRecordRef = Utils.getReference(logicalRecord);
 
 			// Variables in record
 			Element varsInRecord = (Element) logicalRecord.appendChild(doc
@@ -743,6 +755,21 @@ public class SPSSFile extends RandomAccessFile {
 					+ e.getMessage());
 		}
 		return (doc);
+	}
+
+	/**
+	 * @param logicalProductDdi3Id
+	 *            the logicalProductDdi3Id to set
+	 */
+	public void setLogicalProductDdi3Id(String logicalProductDdi3Id) {
+		this.logicalProductDdi3Id = logicalProductDdi3Id;
+	}
+
+	/**
+	 * @return the logicalProductDdi3Id
+	 */
+	public String getLogicalProductDdi3Id() {
+		return logicalProductDdi3Id;
 	}
 
 	/**
@@ -807,9 +834,8 @@ public class SPSSFile extends RandomAccessFile {
 	 * @param dataFormat
 	 * @param logicalProductID
 	 *            the r:ID of the Logical Product this is referring to
-	 * @param uniqueID
-	 *            a String value for the r:ID element. If null, a unique ID will
-	 *            be generated automatically based on the java.util.UUID class
+	 * @param phdpId
+	 *            a String value for the r:ID element.
 	 * @param identifyingAgency
 	 * @return a org.w3c.dom.Document containing the generated Physical Data
 	 *         Product
@@ -817,7 +843,7 @@ public class SPSSFile extends RandomAccessFile {
 	 * @throws DDIFtpException
 	 */
 	private Document getDDI3PhysicalDataProduct(FileFormatInfo dataFormat,
-			String logicalProductID, String uniqueID, String identifyingAgency)
+			String logicalProductID, String phdpId, String identifyingAgency)
 			throws SPSSFileException, DDIFtpException {
 		DocumentBuilderFactory domFactory = DocumentBuilderFactory
 				.newInstance();
@@ -834,9 +860,9 @@ public class SPSSFile extends RandomAccessFile {
 			Element physicalProduct = (Element) doc.appendChild(doc
 					.createElementNS(DDI3_PHYSICAL_PRODUCT_NAMESPACE,
 							"PhysicalDataProduct"));
-			if (uniqueID == null)
-				uniqueID = getDDI3DefaultPhysicalDataProductID(dataFormat);
-			Utils.setDDIMaintainableId(physicalProduct, uniqueID);
+			if (phdpId == null)
+				phdpId = getDDI3DefaultPhysicalDataProductID(dataFormat);
+			Utils.setDDIMaintainableId(physicalProduct, phdpId);
 
 			// Physical structure scheme
 			Element physicalStructureScheme = (Element) physicalProduct
@@ -905,15 +931,14 @@ public class SPSSFile extends RandomAccessFile {
 			// grossRecordStructure.setAttribute("variableQuantity",""+getVariableCount());
 			grossRecordStructure.setAttribute("numberOfPhysicalSegments", "1");
 
-			// LogicalRecordReference
+			// LogicalRecordReference refers:
+			// LogicalProduct:DataRelationship:LogicalRecord:RecordType:Idenfication.
 			Element logicalRecordReference = (Element) grossRecordStructure
 					.appendChild(doc.createElementNS(
 							DDI3_PHYSICAL_PRODUCT_NAMESPACE,
 							"LogicalRecordReference"));
-			// TODO logicalRecordReference
-			elem = (Element) logicalRecordReference.appendChild(doc
-					.createElementNS(SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
-			elem.setTextContent("idref");
+			Utils.setReference(logicalRecordReference, this.logicalRecordRef,
+					doc);
 
 			// PhysicalRecordSegment
 			Element physicalRecordSegment = (Element) grossRecordStructure
@@ -942,45 +967,48 @@ public class SPSSFile extends RandomAccessFile {
 
 			// Record Layout
 			Element recordLayout;
-			if (dataFormat.format == FileFormatInfo.Format.ASCII)
+			if (dataFormat.format == FileFormatInfo.Format.ASCII) {
 				recordLayout = (Element) recordLayoutSheme.appendChild(doc
 						.createElementNS(DDI3_PHYSICAL_PRODUCT_NAMESPACE,
 								"RecordLayout"));
-			else
+			} else {
 				recordLayout = (Element) recordLayoutSheme.appendChild(doc
 						.createElementNS(DDI3_PROPRIETARY_RECORD_NAMESPACE,
 								"ProprietaryRecordLayout"));
-
-			// Record Layout (Common)
+			}
 			Utils.setDDIIdentifiableId(recordLayout, dataFormat.toString());
-			// Physical Structure Reference (Scheme + ID + Segment)
+
+			// References a physical data product
+			// and the ID of the physical record segment from that is described
+			// by this record layout.
 			Element physicalStructureReference = (Element) recordLayout
 					.appendChild(doc.createElementNS(
 							DDI3_PHYSICAL_PRODUCT_NAMESPACE,
 							"PhysicalStructureReference"));
-			elem = (Element) physicalStructureReference
-					.appendChild(doc.createElementNS(
-							SPSSFile.DDI3_REUSABLE_NAMESPACE, "Scheme"));
-			elem = (Element) elem.appendChild(doc.createElementNS(
-					SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
-			elem.setTextContent(getDDI3DefaultPhysicalStructureSchemeID(dataFormat));
-			// TODO physicalStructureReference
+			// id
 			elem = (Element) physicalStructureReference.appendChild(doc
 					.createElementNS(SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
-			elem.setTextContent("idref");
-			// TODO physicalRecordSegmentID
+			elem.setTextContent(phdpId);
+
+			// physical record segment used
 			elem = (Element) physicalStructureReference.appendChild(doc
 					.createElementNS(SPSSFile.DDI3_PHYSICAL_PRODUCT_NAMESPACE,
 							"PhysicalRecordSegmentUsed"));
-			elem.setTextContent("idref");
+			elem.setTextContent(physicalRecordSegment.getAttribute("id"));
 
 			// character set
+			String namespace = null;
+			if (dataFormat.format.equals(FileFormatInfo.Format.ASCII)) {
+				namespace = DDI3_PHYSICAL_PRODUCT_NAMESPACE;
+			} else {
+				namespace = DDI3_PROPRIETARY_RECORD_NAMESPACE;
+			}
 			elem = (Element) recordLayout.appendChild(doc.createElementNS(
-					DDI3_PHYSICAL_PRODUCT_NAMESPACE, "CharacterSet"));
+					namespace, "CharacterSet"));
 			elem.setTextContent("ASCII");
 			// array base
 			elem = (Element) recordLayout.appendChild(doc.createElementNS(
-					DDI3_PHYSICAL_PRODUCT_NAMESPACE, "ArrayBase"));
+					namespace, "ArrayBase"));
 			elem.setTextContent("1");
 			// Record Layout (ASCII)
 			if (dataFormat.format == FileFormatInfo.Format.ASCII) {
@@ -1011,9 +1039,20 @@ public class SPSSFile extends RandomAccessFile {
 				// Software
 				Element software = (Element) recordLayout.appendChild(doc
 						.createElementNS(DDI3_REUSABLE_NAMESPACE, "Software"));
+				Utils.setDDIIdentifiableId(
+						software,
+						IdentificationManager
+								.getInstance()
+								.getIdentificationGenerator()
+								.generateId(ElementType.SOFTWARE.getIdPrefix(),
+										null));
+
 				elem = (Element) software.appendChild(doc.createElementNS(
 						SPSSFile.DDI3_REUSABLE_NAMESPACE, "Name"));
 				elem.setTextContent(dataFormat.toString());
+
+				// TODO add id attr
+
 				if (integerInformationRecord != null) {
 					String version = integerInformationRecord.releaseMajor
 							+ "." + integerInformationRecord.releaseMinor;
