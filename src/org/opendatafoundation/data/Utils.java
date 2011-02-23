@@ -44,6 +44,9 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
+import org.ddialliance.ddi3.xml.xmlbeans.reusable.ReferenceType;
+import org.ddialliance.ddiftp.util.xml.XmlBeansUtil;
+import org.opendatafoundation.data.spss.SPSSFile;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -79,7 +82,8 @@ public class Utils {
 	 * Converts an w3c.dom.Node into a String with intention and leaving XML
 	 * declaration out
 	 * 
-	 * @param node to transform
+	 * @param node
+	 *            to transform
 	 * @return string writer
 	 * @throws TransformerException
 	 * @throws TransformerFactoryConfigurationError
@@ -210,7 +214,6 @@ public class Utils {
 	 */
 	public static void setDDIIdentifiableId(Element e, String id) {
 		e.setAttribute("id", id);
-		// e.setAttribute("isIdentifiable", "true");
 	}
 
 	/**
@@ -221,7 +224,6 @@ public class Utils {
 	 */
 	public static void setDDIMaintainableId(Element e, String id) {
 		e.setAttribute("id", id);
-		// e.setAttribute("isMaintainable", "true");
 	}
 
 	/**
@@ -232,6 +234,36 @@ public class Utils {
 	 */
 	public static void setDDIVersionableId(Element e, String id) {
 		e.setAttribute("id", id);
-		// e.setAttribute("isVersionable", "true");
+	}
+
+	public static ReferenceType getReference(Element e) {
+		ReferenceType ref = ReferenceType.Factory.newInstance();
+		// id
+		ref.addNewID().setStringValue(e.getAttribute("id"));
+		// version
+		if (e.getAttribute("version") != null
+				|| !e.getAttribute("version").equals("")) {
+			ref.addNewVersion().setStringValue(e.getAttribute("version"));
+		}
+		// agency
+		if (e.getAttribute("agency") != null
+				|| !e.getAttribute("agency").equals("")) {
+			ref.addNewVersion().setStringValue(e.getAttribute("agency"));
+		}
+		return ref;
+	}
+
+	/**
+	 * Set reference
+	 * @param doc of type refrence type to set reference on
+	 * @param ref reference to set
+	 */
+	public static void setReference(Element elem, ReferenceType ref, Document doc) {
+		String id = XmlBeansUtil.getTextOnMixedElement(ref.getIDList().get(0));
+		
+		Element idElem = (Element) elem
+		.appendChild(doc.createElementNS(
+				SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
+		idElem.setTextContent(id);
 	}
 }
