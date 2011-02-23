@@ -88,7 +88,8 @@ public class SPSSStringVariable extends SPSSVariable {
      */
     public String getSPSSFormat() {
         // TODO: AHEXw format?
-        return("A"+this.variableRecord.writeFormatWidth);
+        // return("A"+this.variableRecord.writeFormatWidth);
+    	return "string";
     }
 
     /**
