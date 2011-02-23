@@ -132,13 +132,15 @@ public class SPSSNumericVariable extends SPSSVariable {
 		case 4: // dollar
 			formatStr = "Dollar" + getLength() + "." + getDecimals();
 			break;
-		case 5: // fixed format (default)
-			formatStr = "F" + getLength() + "." + getDecimals();
+		case 5: // fixed format (default)			
+			formatStr = "integer";
+			// spss format
+			// formatStr = "F" + width + "." + getDecimals();
 			break;
 		case 17: // scientific notation
 			formatStr = "E" + getLength() + "." + getDecimals();
 			break;
-		case 20: // Date dd-mmm-yyyy or dd-mmm-yy			
+		case 20: // Date dd-mmm-yyyy or dd-mmm-yy
 			formatStr = defineSPSSFormat(width, new String[] { "hh:mm",
 					"dd-mmm-yyyy", "dd-mmm-yy" }, "Date" + width);
 			break;
@@ -174,7 +176,7 @@ public class SPSSNumericVariable extends SPSSVariable {
 			formatStr = "WkDay" + getLength();
 			break;
 		case 27: // Date 3-letter month
-			//formatStr = "Month" + getLength();
+			// formatStr = "Month" + getLength();
 			formatStr = "mmm";
 			break;
 		case 28: // Date in mmm yyyy or mmm yy
