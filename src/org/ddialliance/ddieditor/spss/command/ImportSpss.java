@@ -1,5 +1,6 @@
 package org.ddialliance.ddieditor.spss.command;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
@@ -7,7 +8,6 @@ import java.util.List;
 import org.apache.xmlbeans.XmlObject;
 import org.ddialliance.ddieditor.model.DdiManager;
 import org.ddialliance.ddieditor.model.lightxmlobject.LightXmlObjectType;
-import org.ddialliance.ddieditor.persistenceaccess.maintainablelabel.MaintainableLightLabelQueryResult;
 import org.ddialliance.ddieditor.spss.osgi.Activator;
 import org.ddialliance.ddieditor.spss.wizard.ImportSpssWizard;
 import org.ddialliance.ddieditor.ui.editor.category.CategorySchemeEditor;
@@ -31,6 +31,7 @@ import org.eclipse.swt.custom.BusyIndicator;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
 import org.opendatafoundation.data.FileFormatInfo;
+import org.opendatafoundation.data.FileFormatInfo.ASCIIFormat;
 import org.opendatafoundation.data.FileFormatInfo.Format;
 import org.opendatafoundation.data.Utils;
 import org.opendatafoundation.data.spss.ExportOptions;
@@ -85,7 +86,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 			// import
 			SPSSFile spssFile = null;
 			try {
-				// check parent
+				// study unit
 				List<LightXmlObjectType> studList = DdiManager.getInstance()
 						.checkForParent(
 								SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
@@ -97,7 +98,6 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 							.trans("spss.confirm.createdditoimportinto"));
 					return;
 				}
-
 				LightXmlObjectType studyUnitLight = studList.get(0);
 
 				// init spss file
@@ -122,44 +122,12 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 							studyUnitLight.getVersion(),
 							studyUnitLight.getElement());
 					dom = null;
-
-					// clean up archive - delete - reinsert - strategy
-					List<LightXmlObjectType> archList = DdiManager
-							.getInstance()
-							.getArchivesLight(null, null, null, null)
-							.getLightXmlObjectList().getLightXmlObjectList();
-					if (!archList.isEmpty()) {
-						// get archive xml objs
-						XmlObject[] archs = new XmlObject[archList.size()];
-						int count = 0;
-						for (LightXmlObjectType archLight : archList) {
-							archs[count] = DdiManager.getInstance().getAchive(
-									archLight.getId(), archLight.getVersion(),
-									archLight.getParentId(),
-									archLight.getParentVersion());
-							count++;
-						}
-						for (int i = 0; i < archs.length; i++) {
-							// remove
-							DdiManager.getInstance().deleteElement(archs[i],
-									studyUnitLight.getId(),
-									studyUnitLight.getVersion(),
-									studyUnitLight.getElement());
-
-							// insert
-							DdiManager.getInstance().createElementInto(
-									archs[i], studyUnitLight.getId(),
-									studyUnitLight.getVersion(),
-									studyUnitLight.getElement());
-						}
-					}
 				}
 
 				// physical data product
 				if (importSpssWizard.variableRec) {
 					if (!spssFile.isMetadataLoaded) {
 						spssFile.loadMetadata();
-
 						// TODO add varirefs
 					}
 
@@ -209,6 +177,35 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 					}
 				}
 
+				// physical instance and dat file
+				if (importSpssWizard.variableDataFile) {
+					if (!spssFile.isMetadataLoaded) {
+						spssFile.loadMetadata();
+					}
+					if (!spssFile.isDataLoaded) {
+						spssFile.loadData();
+					}
+
+					// create dat file - dat file location
+					String fileName = studyUnitLight.getId() + ".dat";
+					FileFormatInfo fileFormatInfo = new FileFormatInfo();
+					fileFormatInfo.format = FileFormatInfo.Format.ASCII;
+					fileFormatInfo.asciiFormat = ASCIIFormat.FIXED;
+					spssFile.exportData(new File(importSpssWizard.dataFile
+							+ "/" + fileName), fileFormatInfo);
+
+					// create meta data
+					dom = spssFile.getDDI3PhysicalInstance(new URI("file://"
+							+ fileName), fileFormatInfo);
+
+					DdiManager.getInstance().createElementInto(
+							Utils.nodeToString(dom).toString(),
+							studyUnitLight.getId(),
+							studyUnitLight.getVersion(),
+							studyUnitLight.getElement());
+					dom = null;
+				}
+
 				// frequencies
 				// if (importSpssWizard.frequency) {
 				// TODO use phyton spss oms export plus xslt import
@@ -221,33 +218,35 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 				// .trans("spss.confirm.createfrequenciesnotimplemented"));
 				// }
 
-				// dat file and physical instance
-				// if (importSpssWizard.variableDataFile) {
-				if (false) {
-					if (!spssFile.isMetadataLoaded) {
-						spssFile.loadMetadata();
+				// clean up archive - delete - reinsert - strategy
+				List<LightXmlObjectType> archList = DdiManager
+						.getInstance()
+						.getArchivesLight(null, null, null, null)
+						.getLightXmlObjectList().getLightXmlObjectList();
+				if (!archList.isEmpty()) {
+					// get archive xml objs
+					XmlObject[] archs = new XmlObject[archList.size()];
+					int count = 0;
+					for (LightXmlObjectType archLight : archList) {
+						archs[count] = DdiManager.getInstance().getAchive(
+								archLight.getId(), archLight.getVersion(),
+								archLight.getParentId(),
+								archLight.getParentVersion());
+						count++;
 					}
-					if (!spssFile.isDataLoaded) {
-						spssFile.loadData();
+					for (int i = 0; i < archs.length; i++) {
+						// remove
+						DdiManager.getInstance().deleteElement(archs[i],
+								studyUnitLight.getId(),
+								studyUnitLight.getVersion(),
+								studyUnitLight.getElement());
+
+						// insert
+						DdiManager.getInstance().createElementInto(
+								archs[i], studyUnitLight.getId(),
+								studyUnitLight.getVersion(),
+								studyUnitLight.getElement());
 					}
-					// create dat file - dat file location
-					// importSpssWizard.dataFile
-					if (spssFile.getRecordLayoutSchemeDdi3Id() == null) {
-						MaintainableLightLabelQueryResult m = DdiManager
-								.getInstance().getRecordLayoutSchemeLabel(null,
-										null, null, null);
-
-						System.out.println(m);
-					}
-
-					// String[] fileSplit =
-					// importSpssWizard.dataFile.split("/");
-					// fileSplit[fileSplit.length - 2]
-
-					// TODO hokusPoku.dat ;- )
-					dom = spssFile.getDDI3PhysicalInstance(new URI("file://"
-							+ "hokusPoku.dat"),
-							new FileFormatInfo(Format.ASCII));
 				}
 			} catch (Exception e) {
 				DialogUtil.errorDialog(PlatformUI.getWorkbench().getDisplay()
