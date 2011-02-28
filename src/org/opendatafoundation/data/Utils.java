@@ -224,6 +224,7 @@ public class Utils {
 	 */
 	public static void setDDIMaintainableId(Element e, String id) {
 		e.setAttribute("id", id);
+		e.setAttribute("version", "1.0.0");
 	}
 
 	/**
@@ -234,6 +235,7 @@ public class Utils {
 	 */
 	public static void setDDIVersionableId(Element e, String id) {
 		e.setAttribute("id", id);
+		e.setAttribute("version", "1.0.0");
 	}
 
 	public static ReferenceType getReference(Element e) {
