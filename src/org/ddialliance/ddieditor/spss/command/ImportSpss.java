@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 
+import org.apache.xmlbeans.XmlObject;
 import org.ddialliance.ddieditor.model.DdiManager;
 import org.ddialliance.ddieditor.model.lightxmlobject.LightXmlObjectType;
 import org.ddialliance.ddieditor.persistenceaccess.maintainablelabel.MaintainableLightLabelQueryResult;
@@ -114,82 +115,43 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 							preferenceStore
 									.getString(PreferenceConstants.DDI_AGENCY));
 
-					String logiXml = Utils.nodeToString(dom).toString();
+					// insert
+					DdiManager.getInstance().createElementInto(
+							Utils.nodeToString(dom).toString(),
+							studyUnitLight.getId(),
+							studyUnitLight.getVersion(),
+							studyUnitLight.getElement());
 					dom = null;
-					int endIndex = logiXml.lastIndexOf("LogicalProduct");
-					int startIndex = -1, startCats = -1, startCods = -1, startVars = -1;
 
-					// vars
-					startVars = logiXml.lastIndexOf("VariableSchemeReference");
-					startVars = logiXml.indexOf("VariableScheme", startVars
-							+ "VariableSchemeReference".length());
-					if (startVars > -1) {
-						startIndex = startVars;
-					}
+					// clean up archive - delete - reinsert - strategy
+					List<LightXmlObjectType> archList = DdiManager
+							.getInstance()
+							.getArchivesLight(null, null, null, null)
+							.getLightXmlObjectList().getLightXmlObjectList();
+					if (!archList.isEmpty()) {
+						// get archive xml objs
+						XmlObject[] archs = new XmlObject[archList.size()];
+						int count = 0;
+						for (LightXmlObjectType archLight : archList) {
+							archs[count] = DdiManager.getInstance().getAchive(
+									archLight.getId(), archLight.getVersion(),
+									archLight.getParentId(),
+									archLight.getParentVersion());
+							count++;
+						}
+						for (int i = 0; i < archs.length; i++) {
+							// remove
+							DdiManager.getInstance().deleteElement(archs[i],
+									studyUnitLight.getId(),
+									studyUnitLight.getVersion(),
+									studyUnitLight.getElement());
 
-					// cods
-					startCods = logiXml.indexOf("CodeScheme");
-					if (startCods > -1) {
-						startIndex = startCods;
-					}
-
-					// cats
-					startCats = logiXml.indexOf("CategoryScheme");
-					if (startCats > -1) {
-						startIndex = startCats;
-					}
-
-					// insert logp
-					if (startIndex > -1) {
-						StringBuilder insert = new StringBuilder(
-								logiXml.substring(0, startIndex - 1));
-						insert.append("</LogicalProduct>");
-						DdiManager.getInstance().createElement(
-								insert.toString(), studyUnitLight.getId(),
-								studyUnitLight.getVersion(),
-								studyUnitLight.getElement(),
-								new String[] { "ConceptualComponent" });
-						insert = null;
-					} else {
-						DdiManager.getInstance().createElement(logiXml,
-								studyUnitLight.getId(),
-								studyUnitLight.getVersion(),
-								studyUnitLight.getElement(),
-								new String[] { "ConceptualComponent" });
-					}
-
-					// insert cats
-					if (startCats > -1) {
-						String insert = logiXml.substring(startCats - 1,
-								startCods - 2);
-						log.debug(insert);
-
-						DdiManager.getInstance().createElementInto(insert,
-								spssFile.getLogicalProductDdi3Id(), "1.0.0",
-								"logicalproduct__LogicalProduct");
-						insert = null;
-					}
-
-					// insert cods
-					if (startCods > -1) {
-						String insert = logiXml.substring(startCods - 1,
-								startVars - 2);
-
-						String[] split = insert.split("<CodeScheme");
-						DdiManager.getInstance().createElementInto(insert,
-								spssFile.getLogicalProductDdi3Id(), "1.0.0",
-								"logicalproduct__LogicalProduct");
-						insert = null;
-					}
-
-					// insert vars
-					if (startVars > -1) {
-						String insert = logiXml.substring(startVars - 1,
-								endIndex - 2);
-						DdiManager.getInstance().createElementInto(insert,
-								spssFile.getLogicalProductDdi3Id(), "1.0.0",
-								"logicalproduct__LogicalProduct");
-						insert = null;
+							// insert
+							DdiManager.getInstance().createElementInto(
+									archs[i], studyUnitLight.getId(),
+									studyUnitLight.getVersion(),
+									studyUnitLight.getElement());
+						}
 					}
 				}
 
