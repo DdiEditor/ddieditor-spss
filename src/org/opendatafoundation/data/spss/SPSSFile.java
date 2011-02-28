@@ -534,15 +534,7 @@ public class SPSSFile extends RandomAccessFile {
 		// return (this.getUniqueID() + "_" + this.physicalDataProductIDSuffix
 		// + "_" + dataFormat.toString());
 		if (physicalDataProductId == null) {
-			physicalDataProductId = IdentificationManager
-					.getInstance()
-					.getIdentificationGenerator()
-					.generateId(
-							ElementType.PHYSICAL_DATA_PRODUCT.getIdPrefix()
-									+ IdentificationManager.getInstance()
-											.getIdentificationGenerator()
-											.getDelimiter()
-									+ dataFormat.toString(), null);
+			physicalDataProductId = createId(ElementType.PHYSICAL_DATA_PRODUCT);
 		}
 		return physicalDataProductId;
 	}
@@ -560,15 +552,7 @@ public class SPSSFile extends RandomAccessFile {
 	public String getDDI3DefaultPhysicalInstanceID(FileFormatInfo dataFormat)
 			throws DDIFtpException {
 		if (physicalInstanceDdi3Id == null) {
-			physicalInstanceDdi3Id = IdentificationManager
-					.getInstance()
-					.getIdentificationGenerator()
-					.generateId(
-							ElementType.PHYSICAL_INSTANCE.getIdPrefix()
-									+ IdentificationManager.getInstance()
-											.getIdentificationGenerator()
-											.getDelimiter()
-									+ dataFormat.toString(), null);
+			physicalInstanceDdi3Id = createId(ElementType.PHYSICAL_INSTANCE);
 		}
 		// return (this.getUniqueID() + "_" + this.physicalInstanceIDSuffix +
 		// "_" + dataFormat
@@ -587,19 +571,10 @@ public class SPSSFile extends RandomAccessFile {
 			FileFormatInfo dataFormat) throws DDIFtpException {
 		// return (this.getUniqueID() + "_" + this.physicalStructureSchemeSuffix
 		// + "_" + dataFormat.toString());
-		return IdentificationManager
-				.getInstance()
-				.getIdentificationGenerator()
-				.generateId(
-						ElementType.PHYSICAL_STRUCTURE_SCHEME.getIdPrefix(),
-						null);
+		return createId(ElementType.PHYSICAL_STRUCTURE_SCHEME);
 	}
 
 	String recordLayoutSchemeDdi3Id = null;
-
-	public String getRecordLayoutSchemeDdi3Id() {
-		return recordLayoutSchemeDdi3Id;
-	}
 
 	public void setRecordLayoutSchemeDdi3Id(String recordLayoutSchemeDdi3Id) {
 		this.recordLayoutSchemeDdi3Id = recordLayoutSchemeDdi3Id;
@@ -619,17 +594,19 @@ public class SPSSFile extends RandomAccessFile {
 		// dataFormat
 		// .toString());
 		if (recordLayoutSchemeDdi3Id == null) {
-			recordLayoutSchemeDdi3Id = IdentificationManager
-					.getInstance()
-					.getIdentificationGenerator()
-					.generateId(
-							ElementType.RECORD_LAYOUT_SCHEME.getIdPrefix()
-									+ IdentificationManager.getInstance()
-											.getIdentificationGenerator()
-											.getDelimiter()
-									+ dataFormat.toString(), null);
+			recordLayoutSchemeDdi3Id = createId(ElementType.RECORD_LAYOUT_SCHEME);
 		}
 		return recordLayoutSchemeDdi3Id;
+	}
+
+	String recordLayoutId = null;
+
+	public String getRecordLayoutId() {
+		return recordLayoutId;
+	}
+
+	public void setRecordLayoutId(String recordLayoutId) {
+		this.recordLayoutId = recordLayoutId;
 	}
 
 	String variableSchemeId = null;
@@ -877,14 +854,8 @@ public class SPSSFile extends RandomAccessFile {
 					.appendChild(doc.createElementNS(
 							DDI3_PHYSICAL_PRODUCT_NAMESPACE,
 							"PhysicalStructure"));
-			Utils.setDDIVersionableId(
-					physicalStructure,
-					IdentificationManager
-							.getInstance()
-							.getIdentificationGenerator()
-							.generateId(
-									ElementType.PHYSICAL_STRUCTURE
-											.getIdPrefix(), null));
+			Utils.setDDIVersionableId(physicalStructure,
+					createId(ElementType.PHYSICAL_STRUCTURE));
 			// this.physicalStructureID);
 
 			// logical product reference
@@ -976,7 +947,8 @@ public class SPSSFile extends RandomAccessFile {
 						.createElementNS(DDI3_PROPRIETARY_RECORD_NAMESPACE,
 								"ProprietaryRecordLayout"));
 			}
-			Utils.setDDIIdentifiableId(recordLayout, dataFormat.toString());
+			recordLayoutId = createId(ElementType.RECORD_LAYOUT);
+			Utils.setDDIIdentifiableId(recordLayout, recordLayoutId);
 
 			// References a physical data product
 			// and the ID of the physical record segment from that is described
@@ -1039,13 +1011,8 @@ public class SPSSFile extends RandomAccessFile {
 				// Software
 				Element software = (Element) recordLayout.appendChild(doc
 						.createElementNS(DDI3_REUSABLE_NAMESPACE, "Software"));
-				Utils.setDDIIdentifiableId(
-						software,
-						IdentificationManager
-								.getInstance()
-								.getIdentificationGenerator()
-								.generateId(ElementType.SOFTWARE.getIdPrefix(),
-										null));
+				Utils.setDDIIdentifiableId(software,
+						createId(ElementType.SOFTWARE));
 
 				elem = (Element) software.appendChild(doc.createElementNS(
 						SPSSFile.DDI3_REUSABLE_NAMESPACE, "Name"));
@@ -1281,21 +1248,15 @@ public class SPSSFile extends RandomAccessFile {
 			elem.setTextContent(recordLayoutSchemeID);
 			elem = (Element) recordLayoutReference.appendChild(doc
 					.createElementNS(SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
-			elem.setTextContent(dataFormat.toString());
+			elem.setTextContent(getRecordLayoutId());
 
 			// data file identification
 			Element dataFileIdentification = (Element) physicalInstance
 					.appendChild(doc.createElementNS(
 							DDI3_PHYSICAL_INSTANCE_NAMESPACE,
 							"DataFileIdentification"));
-			Utils.setDDIIdentifiableId(
-					dataFileIdentification,
-					IdentificationManager
-							.getInstance()
-							.getIdentificationGenerator()
-							.generateId(
-									ElementType.DATA_FILE_IDENTIFICATION
-											.getIdPrefix(), null));
+			Utils.setDDIIdentifiableId(dataFileIdentification,
+					createId(ElementType.DATA_FILE_IDENTIFICATION));
 			// this.physicalInstanceFileID);
 			// Master
 			if (dataFormat.format == FileFormatInfo.Format.SPSS)
@@ -1326,14 +1287,8 @@ public class SPSSFile extends RandomAccessFile {
 			Element grossFile = (Element) physicalInstance.appendChild(doc
 					.createElementNS(DDI3_PHYSICAL_INSTANCE_NAMESPACE,
 							"GrossFileStructure"));
-			Utils.setDDIIdentifiableId(
-					grossFile,
-					IdentificationManager
-							.getInstance()
-							.getIdentificationGenerator()
-							.generateId(
-									ElementType.GROSS_FILE_STRUCTURE
-											.getIdPrefix(), null));
+			Utils.setDDIIdentifiableId(grossFile,
+					createId(ElementType.GROSS_FILE_STRUCTURE));
 			// this.grossFileID);
 
 			// File statistics
