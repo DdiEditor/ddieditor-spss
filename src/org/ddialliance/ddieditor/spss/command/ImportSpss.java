@@ -173,7 +173,8 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 								studyUnitLight.getId(),
 								studyUnitLight.getVersion(),
 								studyUnitLight.getElement(),
-								new String[] { "LogicalProduct" });
+								new String[] { "LogicalProduct" },
+								new String[] {}, new String[] {});
 					}
 				}
 
@@ -219,8 +220,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 				// }
 
 				// clean up archive - delete - reinsert - strategy
-				List<LightXmlObjectType> archList = DdiManager
-						.getInstance()
+				List<LightXmlObjectType> archList = DdiManager.getInstance()
 						.getArchivesLight(null, null, null, null)
 						.getLightXmlObjectList().getLightXmlObjectList();
 				if (!archList.isEmpty()) {
@@ -242,8 +242,8 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 								studyUnitLight.getElement());
 
 						// insert
-						DdiManager.getInstance().createElementInto(
-								archs[i], studyUnitLight.getId(),
+						DdiManager.getInstance().createElementInto(archs[i],
+								studyUnitLight.getId(),
 								studyUnitLight.getVersion(),
 								studyUnitLight.getElement());
 					}
