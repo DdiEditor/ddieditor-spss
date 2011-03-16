@@ -182,20 +182,24 @@ public class ImportSpssWizard extends Wizard {
 			}
 			editor.createLabel(group, Translator.trans("spss.resource.select"));
 			Combo combo = editor.createCombo(group, options);
-			combo.addSelectionListener(new SelectionListener() {
-				@Override
-				public void widgetSelected(SelectionEvent event) {
-					Combo c = (Combo) event.getSource();
-					selectedResource = resources.get(c.getSelectionIndex());
-					pageComplete();
-				}
+			if (options.length == 1) {
+				combo.select(0);
+				selectedResource = resources.get(0);
+			} else {
+				combo.addSelectionListener(new SelectionListener() {
+					@Override
+					public void widgetSelected(SelectionEvent event) {
+						Combo c = (Combo) event.getSource();
+						selectedResource = resources.get(c.getSelectionIndex());
+						pageComplete();
+					}
 
-				@Override
-				public void widgetDefaultSelected(SelectionEvent event) {
-					// do nothing
-				}
-			});
-
+					@Override
+					public void widgetDefaultSelected(SelectionEvent event) {
+						// do nothing
+					}
+				});
+			}
 			// finalize
 			setControl(group);
 			setPageComplete(false);
