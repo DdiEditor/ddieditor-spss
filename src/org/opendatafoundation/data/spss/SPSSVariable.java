@@ -459,12 +459,6 @@ public abstract class SPSSVariable {
 			Utils.setDDIMaintainableId(scheme, codeSchemeID);
 			codeSchemeIdMap.put(this.variableNumber, codeSchemeID);
 
-			// code scheme label
-			elem = (Element) scheme.appendChild(doc.createElementNS(
-					SPSSFile.DDI3_REUSABLE_NAMESPACE, "Label"));
-			elem.setTextContent(categorySchemeLabelMap.get(categorySchemeID));
-			spssFile.setLangAttr(elem);
-
 			// categorySchemeReference
 			if (createCategoryReference) {
 				Element categorySchemeReference = (Element) scheme
@@ -517,6 +511,24 @@ public abstract class SPSSVariable {
 					 * value-key to string elem.setTextContent(new String(key));
 					 * }
 					 */
+				}
+			} else {
+				// iterate over categories - but do not store category reference
+				Iterator catIterator = categoryMap.keySet().iterator();
+				while (catIterator.hasNext()) {
+					String key = (String) catIterator.next();
+					SPSSVariableCategory cat = categoryMap.get(key);
+
+					// Code element
+					Element code = (Element) scheme.appendChild(doc
+							.createElementNS(
+									SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
+									"Code"));
+
+					// value
+					elem = (Element) code.appendChild(doc.createElementNS(
+							SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE, "Value"));
+					elem.setTextContent(cat.strValue);
 				}
 			}
 		}

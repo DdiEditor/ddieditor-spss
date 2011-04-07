@@ -1,11 +1,11 @@
 package org.ddialliance.ddieditor.spss.wizard;
 
+import java.io.File;
 import java.util.List;
 
 import org.ddialliance.ddieditor.model.resource.DDIResourceType;
 import org.ddialliance.ddieditor.persistenceaccess.PersistenceManager;
 import org.ddialliance.ddieditor.ui.editor.Editor;
-import org.ddialliance.ddieditor.ui.util.swtdesigner.SWTResourceManager;
 import org.ddialliance.ddieditor.ui.view.Messages;
 import org.ddialliance.ddiftp.util.DDIFtpException;
 import org.ddialliance.ddiftp.util.Translator;
@@ -14,6 +14,8 @@ import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.KeyAdapter;
+import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.GridData;
@@ -141,6 +143,23 @@ public class ImportSpssWizard extends Wizard {
 			editor.createLabel(group,
 					Translator.trans("spss.filechooser.title"));
 			final Text pathText = editor.createText(group, "");
+			pathText.addKeyListener(new KeyAdapter() {
+				@Override
+				public void keyReleased(KeyEvent e) {
+					// on a CR - check if file exist
+					if (e.keyCode == SWT.CR) {
+						File file = new File(pathText.getText());
+						if (!new File(pathText.getText()).exists()) {
+							MessageDialog.openError(PlatformUI.getWorkbench().getDisplay()
+									.getActiveShell(), Messages.getString("ErrorTitle"),
+									Translator.trans("spss.filenotfound.message", pathText.getText()));
+							return;
+						}
+						spssFile = pathText.getText();
+						pageComplete();
+					}
+				}
+			});
 			Button pathBrowse = editor.createButton(group,
 					Translator.trans("spss.filechooser.browse"));
 			pathBrowse.addSelectionListener(new SelectionListener() {
@@ -329,6 +348,23 @@ public class ImportSpssWizard extends Wizard {
 			editor.createLabel(group,
 					Translator.trans("spss.wizard.datafilepage.exportdir"));
 			final Text pathText = editor.createText(group, "");
+			pathText.addKeyListener(new KeyAdapter() {
+				@Override
+				public void keyReleased(KeyEvent e) {
+					// on a CR - check if file exist
+					if (e.keyCode == SWT.CR) {
+						File file = new File(pathText.getText());
+						if (!new File(pathText.getText()).exists()) {
+							MessageDialog.openError(PlatformUI.getWorkbench().getDisplay()
+									.getActiveShell(), Messages.getString("ErrorTitle"),
+									Translator.trans("spss.filenotfound.message", pathText.getText()));
+							return;
+						}
+						dataFile = pathText.getText();
+						pageComplete();
+					}
+				}
+			});
 			Button pathBrowse = editor.createButton(group,
 					Translator.trans("spss.filechooser.browse"));
 			pathBrowse.addSelectionListener(new SelectionListener() {
