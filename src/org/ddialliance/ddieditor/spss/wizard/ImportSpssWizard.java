@@ -161,7 +161,7 @@ public class ImportSpssWizard extends Wizard {
 			pathText.addKeyListener(new KeyAdapter() {
 				@Override
 				public void keyReleased(KeyEvent e) {
-					// on a CR og TAB - check if file exist
+					// on a CR - check if file exist and read it
 					if (e.keyCode == SWT.CR) {
 						spssFile = readFile(pathText);
 					}
@@ -169,6 +169,7 @@ public class ImportSpssWizard extends Wizard {
 			});
 			pathText.addTraverseListener(new TraverseListener() {
 				public void keyTraversed(TraverseEvent e) {
+					// on a TAB - check if file exist and read it
 					switch (e.detail) {
 					case SWT.TRAVERSE_TAB_NEXT:
 					case SWT.TRAVERSE_TAB_PREVIOUS: {
