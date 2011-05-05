@@ -18,6 +18,8 @@ import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.events.TraverseEvent;
+import org.eclipse.swt.events.TraverseListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
@@ -132,6 +134,19 @@ public class ImportSpssWizard extends Wizard {
 				setPageComplete(true);
 			}
 		}
+		
+		private String readFile(Text pathText) {
+			File file = new File(pathText.getText());
+			if (!new File(pathText.getText()).exists()) {
+				MessageDialog.openError(PlatformUI.getWorkbench().getDisplay()
+						.getActiveShell(), Messages.getString("ErrorTitle"),
+						Translator.trans("spss.filenotfound.message", pathText.getText()));
+				setPageComplete(false);
+				return null;
+			}
+			setPageComplete(true);
+			return pathText.getText();
+		}
 
 		@Override
 		public void createControl(Composite parent) {
@@ -146,17 +161,22 @@ public class ImportSpssWizard extends Wizard {
 			pathText.addKeyListener(new KeyAdapter() {
 				@Override
 				public void keyReleased(KeyEvent e) {
-					// on a CR - check if file exist
+					// on a CR og TAB - check if file exist
 					if (e.keyCode == SWT.CR) {
-						File file = new File(pathText.getText());
-						if (!new File(pathText.getText()).exists()) {
-							MessageDialog.openError(PlatformUI.getWorkbench().getDisplay()
-									.getActiveShell(), Messages.getString("ErrorTitle"),
-									Translator.trans("spss.filenotfound.message", pathText.getText()));
-							return;
+						spssFile = readFile(pathText);
+					}
+				}
+			});
+			pathText.addTraverseListener(new TraverseListener() {
+				public void keyTraversed(TraverseEvent e) {
+					switch (e.detail) {
+					case SWT.TRAVERSE_TAB_NEXT:
+					case SWT.TRAVERSE_TAB_PREVIOUS: {
+						spssFile = readFile(pathText);
+						if (spssFile == null) {
+							e.doit = false;
 						}
-						spssFile = pathText.getText();
-						pageComplete();
+					}
 					}
 				}
 			});
