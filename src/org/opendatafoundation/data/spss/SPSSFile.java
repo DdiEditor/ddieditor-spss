@@ -705,6 +705,8 @@ public class SPSSFile extends RandomAccessFile {
 			}
 
 			// Create code schemes (one per variable with label set)
+			// TODO code schemes has to be created for variable without
+			// value-labels
 			varIterator = variableMap.keySet().iterator();
 			while (varIterator.hasNext()) {
 				SPSSVariable var = variableMap.get(varIterator.next());
@@ -726,6 +728,10 @@ public class SPSSFile extends RandomAccessFile {
 			while (varIterator.hasNext()) {
 				SPSSVariable var = variableMap.get(varIterator.next());
 				varScheme.appendChild(var.createDDI3Variable(doc));
+				// System.out.println("name: " + var.getName());
+				// System.out.println("var: " + var.getDDI3DataType());
+				// System.out.println("Rep.-type: "
+				// + var.getDDI3RepresentationType());
 			}
 		} catch (ParserConfigurationException e) {
 			throw new SPSSFileException("Error creating DDI Document: "
@@ -1535,7 +1541,7 @@ public class SPSSFile extends RandomAccessFile {
 					// 1-3 --> discrete missing value codes (up to three)
 					for (int j = 0; j < type2Record.missingValueFormatCode; j++) {
 						// if the value does not exist as a regular category, we
-						// need to create the catgry
+						// need to create the category
 						SPSSVariableCategory cat = var.addCategory(
 								type2Record.missingValue[j], "");
 						cat.isMissing = true;
@@ -1550,6 +1556,7 @@ public class SPSSFile extends RandomAccessFile {
 							.byte8ToDouble(type2Record.missingValue[0]);
 					int to = (int) SPSSUtils
 							.byte8ToDouble(type2Record.missingValue[1]);
+					// TODO code loaded here
 					for (int j = from; j <= to; j++) {
 						SPSSVariableCategory cat = ((SPSSNumericVariable) var)
 								.addCategory((double) j, "");
@@ -1689,6 +1696,7 @@ public class SPSSFile extends RandomAccessFile {
 					}
 					break;
 				default: // generic type 7
+
 					SPSSRecordType7 record7 = new SPSSRecordType7();
 					record7.read(this);
 					log(record7.toString());
