@@ -86,12 +86,17 @@ public class SPSSNumericVariable extends SPSSVariable {
 			throws SPSSFileException {
 		SPSSVariableCategory cat;
 		String strValue = valueToString(value).trim();
+		
+		// add code to codeList
+		codeList.add(strValue);
+		
+		// add cat to categoryMap indexed by code
 		cat = categoryMap.get(strValue);
 		if (cat == null) {
 			// create and to the map
 			cat = new SPSSVariableCategory();
 			categoryMap.put(strValue, cat);
-		}
+		}		
 		cat.value = value;
 		cat.strValue = strValue;
 		cat.label = label;

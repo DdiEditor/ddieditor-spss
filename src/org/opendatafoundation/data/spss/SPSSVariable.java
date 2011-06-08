@@ -29,9 +29,11 @@ package org.opendatafoundation.data.spss;
  * 
  */
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.ddialliance.ddieditor.ui.model.ElementType;
@@ -88,7 +90,7 @@ public abstract class SPSSVariable {
 	 * numeric variables
 	 */
 	public Map<String, SPSSVariableCategory> categoryMap = new LinkedHashMap<String, SPSSVariableCategory>();
-
+	public List<String> codeList = new ArrayList<String>();
 	/**
 	 * Map<variable-number, ddi3 id for variable>
 	 */
