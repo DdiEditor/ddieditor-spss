@@ -171,6 +171,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 										format[i]), logicalProductID);
 
 						DdiManager.getInstance().createElement(
+								dom.getLocalName(), 
 								Utils.nodeToString(dom).toString(),
 								studyUnitLight.getId(),
 								studyUnitLight.getVersion(),
