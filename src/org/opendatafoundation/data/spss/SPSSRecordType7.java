@@ -75,10 +75,6 @@ public class SPSSRecordType7 extends SPSSAbstractRecordType {
         str += "\nRecord Subtype  : "+recordSubtypeCode;
         str += "\nData elements   : "+numberOfDataElements;
         str += "\nElement length  : "+dataElementLength;
-        for (int i = 0; i <numberOfDataElements ; i++) {
-            str 
-            += "\nDataElement      : "+new String(dataElement.get(i));			
-		}
         return(str);
     }
 }
