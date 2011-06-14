@@ -1585,11 +1585,11 @@ public class SPSSFile extends RandomAccessFile {
 
 		// log
 		log("\n# VARIABLES: " + variableMap.size());
-		Iterator varIterator = variableMap.keySet().iterator();
-		while (varIterator.hasNext()) {
-			SPSSVariable var = variableMap.get(varIterator.next());
-			// log(var.getName());
-		}
+//		Iterator varIterator = variableMap.keySet().iterator();
+//		while (varIterator.hasNext()) {
+//			SPSSVariable var = variableMap.get(varIterator.next());
+//			log(var.getName());
+//		}
 
 		// Loop over other records until we find the record type 999
 		do {
