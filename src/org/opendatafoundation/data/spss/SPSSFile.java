@@ -1540,9 +1540,10 @@ public class SPSSFile extends RandomAccessFile {
 				if (type2Record.missingValueFormatCode > 0) {
 					// 1-3 --> discrete missing value codes (up to three)
 					for (int j = 0; j < type2Record.missingValueFormatCode; j++) {
+						// adding missing values:
 						// if the value does not exist as a regular category, we
 						// need to create the category
-						SPSSVariableCategory cat = var.addCategory(
+						SPSSVariableCategory cat = var.addCategory(true,
 								type2Record.missingValue[j], "");
 						cat.isMissing = true;
 
@@ -1550,7 +1551,7 @@ public class SPSSFile extends RandomAccessFile {
 				} else if (type2Record.missingValueFormatCode <= -2) {
 					// -2 --> range of missing value codes
 					// Note1: This is only allowed for numeric variable
-					// Note2: We assume that the range ius made of integral
+					// Note2: We assume that the range is made of integral
 					// values and increments by 1!!
 					int from = (int) SPSSUtils
 							.byte8ToDouble(type2Record.missingValue[0]);
@@ -1559,12 +1560,12 @@ public class SPSSFile extends RandomAccessFile {
 					// TODO code loaded here
 					for (int j = from; j <= to; j++) {
 						SPSSVariableCategory cat = ((SPSSNumericVariable) var)
-								.addCategory((double) j, "");
+								.addCategory(true, (double) j, "");
 						cat.isMissing = true;
 					}
 					if (type2Record.missingValueFormatCode == -3) {
 						// -3 --> an extra discrete value is also specified
-						SPSSVariableCategory cat = var.addCategory(
+						SPSSVariableCategory cat = var.addCategory(true,
 								type2Record.missingValue[2], "");
 						cat.isMissing = true;
 					}
@@ -1585,11 +1586,11 @@ public class SPSSFile extends RandomAccessFile {
 
 		// log
 		log("\n# VARIABLES: " + variableMap.size());
-//		Iterator varIterator = variableMap.keySet().iterator();
-//		while (varIterator.hasNext()) {
-//			SPSSVariable var = variableMap.get(varIterator.next());
-//			log(var.getName());
-//		}
+		// Iterator varIterator = variableMap.keySet().iterator();
+		// while (varIterator.hasNext()) {
+		// SPSSVariable var = variableMap.get(varIterator.next());
+		// log(var.getName());
+		// }
 
 		// Loop over other records until we find the record type 999
 		do {
@@ -1625,7 +1626,7 @@ public class SPSSFile extends RandomAccessFile {
 							.iterator();
 					while (catIterator.hasNext()) {
 						byte[] key = (byte[]) catIterator.next();
-						SPSSVariableCategory cat = var.addCategory(key,
+						SPSSVariableCategory cat = var.addCategory(false, key,
 								record3.valueLabel.get(key));
 					}
 				}

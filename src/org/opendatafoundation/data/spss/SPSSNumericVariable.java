@@ -34,6 +34,7 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.opendatafoundation.data.FileFormatInfo;
 import org.opendatafoundation.data.Utils;
@@ -71,10 +72,10 @@ public class SPSSNumericVariable extends SPSSVariable {
 	 * 
 	 * @throws SPSSFileException
 	 */
-	public SPSSVariableCategory addCategory(byte[] byteValue, String label)
-			throws SPSSFileException {
+	public SPSSVariableCategory addCategory(boolean missing, byte[] byteValue,
+			String label) throws SPSSFileException {
 		double value = SPSSUtils.byte8ToDouble(byteValue);
-		return (addCategory(value, label));
+		return (addCategory(missing, value, label));
 	}
 
 	/**
@@ -82,21 +83,28 @@ public class SPSSNumericVariable extends SPSSVariable {
 	 * 
 	 * @throws SPSSFileException
 	 */
-	public SPSSVariableCategory addCategory(double value, String label)
-			throws SPSSFileException {
+	public SPSSVariableCategory addCategory(boolean missing, double value,
+			String label) throws SPSSFileException {
+		Map<String, SPSSVariableCategory> map = null;
 		SPSSVariableCategory cat;
 		String strValue = valueToString(value).trim();
-		
+
 		// add code to codeList
 		codeList.add(strValue);
-		
+
 		// add cat to categoryMap indexed by code
-		cat = categoryMap.get(strValue);
+		if (missing) {
+			map = missingCategoryMap;
+		} else {
+			map = categoryMap;
+		}
+		cat = (SPSSVariableCategory) map.get(strValue);
 		if (cat == null) {
-			// create and to the map
+			// create and add to the map
 			cat = new SPSSVariableCategory();
-			categoryMap.put(strValue, cat);
-		}		
+			map.put(strValue, cat);
+			map.entrySet();
+		}
 		cat.value = value;
 		cat.strValue = strValue;
 		cat.label = label;
@@ -137,7 +145,7 @@ public class SPSSNumericVariable extends SPSSVariable {
 		case 4: // dollar
 			formatStr = "Dollar" + getLength() + "." + getDecimals();
 			break;
-		case 5: // fixed format (default)			
+		case 5: // fixed format (default)
 			formatStr = "integer";
 			// spss format
 			// formatStr = "F" + width + "." + getDecimals();

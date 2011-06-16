@@ -89,7 +89,11 @@ public abstract class SPSSVariable {
 	 * The map of categories. Note that the key is always a string, even for
 	 * numeric variables
 	 */
+	public Map<String, SPSSVariableCategory> misCategoryMap = new LinkedHashMap<String, SPSSVariableCategory>();
+	// all categories incl. missing:
 	public Map<String, SPSSVariableCategory> categoryMap = new LinkedHashMap<String, SPSSVariableCategory>();
+	// only missing categories:
+	public Map<String, SPSSVariableCategory> missingCategoryMap = new LinkedHashMap<String, SPSSVariableCategory>();
 	public List<String> codeList = new ArrayList<String>();
 	/**
 	 * Map<variable-number, ddi3 id for variable>
@@ -130,8 +134,8 @@ public abstract class SPSSVariable {
 	/**
 	 * Adds a category to the variable
 	 */
-	public abstract SPSSVariableCategory addCategory(byte[] byteValue,
-			String label) throws SPSSFileException;
+	public abstract SPSSVariableCategory addCategory(boolean missing,
+			byte[] byteValue, String label) throws SPSSFileException;
 
 	/**
 	 * @return A string containing the kind of measure
