@@ -775,7 +775,8 @@ public abstract class SPSSVariable {
 					elem.setAttribute("decimalPositions",
 							"" + this.getDecimals());
 					// - missing values
-					Iterator catIterator = missingCategoryMap.keySet().iterator();
+					Iterator catIterator = missingCategoryMap.keySet()
+							.iterator();
 					StringBuilder missing = new StringBuilder();
 					while (catIterator.hasNext()) {
 						String key = (String) catIterator.next();
