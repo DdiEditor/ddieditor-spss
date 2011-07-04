@@ -764,15 +764,30 @@ public abstract class SPSSVariable {
 			} else {
 				String dataType = getDDI3DataType();
 				if (getDDI3RepresentationType() == DDI3RepresentationType.NUMERIC) {
-					// numeric representation
+					// numeric representation - type
 					elem = (Element) representation.appendChild(doc
 							.createElementNS(
 									SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 									"NumericRepresentation"));
 					if (dataType != null)
 						elem.setAttribute("type", dataType);
+					// - decimal position
 					elem.setAttribute("decimalPositions",
 							"" + this.getDecimals());
+					// - missing values
+					Iterator catIterator = missingCategoryMap.keySet().iterator();
+					StringBuilder missing = new StringBuilder();
+					while (catIterator.hasNext()) {
+						String key = (String) catIterator.next();
+						SPSSVariableCategory cat = missingCategoryMap.get(key);
+						missing.append(cat.strValue);
+						if (catIterator.hasNext()) {
+							missing.append(" ");
+						}
+					}
+					if (missing.length() > 0) {
+						elem.setAttribute("missingValue", missing.toString());
+					}
 					// TODO: DDI3: add @format attribute to schema
 					// elem.setAttribute("format", this.getSPSSFormat());
 				}
