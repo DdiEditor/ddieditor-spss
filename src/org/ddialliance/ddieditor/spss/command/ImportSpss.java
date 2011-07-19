@@ -13,10 +13,10 @@ import org.ddialliance.ddieditor.spss.wizard.ImportSpssWizard;
 import org.ddialliance.ddieditor.ui.editor.category.CategorySchemeEditor;
 import org.ddialliance.ddieditor.ui.editor.code.CodeSchemeEditor;
 import org.ddialliance.ddieditor.ui.editor.variable.VariableSchemeEditor;
-import org.ddialliance.ddieditor.ui.preference.PreferenceConstants;
 import org.ddialliance.ddieditor.ui.util.DialogUtil;
 import org.ddialliance.ddieditor.ui.view.Messages;
 import org.ddialliance.ddieditor.ui.view.ViewManager;
+import org.ddialliance.ddieditor.util.DdiEditorConfig;
 import org.ddialliance.ddiftp.util.Translator;
 import org.ddialliance.ddiftp.util.log.Log;
 import org.ddialliance.ddiftp.util.log.LogFactory;
@@ -109,13 +109,13 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 				if (importSpssWizard.variable) {
 					spssFile.loadMetadata();
 					ExportOptions exportOptions = new ExportOptions();
-					// TODO Control ExportOption.createCategories by property 
+					// TODO Control ExportOption.createCategories by property
 					// Get the Categories from Wiki interface
 					exportOptions.createCategories = false;
 
 					dom = spssFile.getDDI3LogicalProduct(exportOptions, null,
 							preferenceStore
-									.getString(PreferenceConstants.DDI_AGENCY));
+									.getString(DdiEditorConfig.DDI_AGENCY));
 
 					// insert
 					DdiManager.getInstance().createElementInto(
@@ -171,7 +171,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 										format[i]), logicalProductID);
 
 						DdiManager.getInstance().createElement(
-								dom.getDocumentElement().getLocalName(), 
+								dom.getDocumentElement().getLocalName(),
 								Utils.nodeToString(dom).toString(),
 								studyUnitLight.getId(),
 								studyUnitLight.getVersion(),
