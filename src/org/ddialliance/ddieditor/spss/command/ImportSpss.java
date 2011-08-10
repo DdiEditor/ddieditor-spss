@@ -194,13 +194,13 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 					String fileName = studyUnitLight.getId() + ".dat";
 					FileFormatInfo fileFormatInfo = new FileFormatInfo();
 					fileFormatInfo.format = FileFormatInfo.Format.ASCII;
-					fileFormatInfo.asciiFormat = ASCIIFormat.FIXED;
+					fileFormatInfo.asciiFormat = ASCIIFormat.DELIMITED;
 					spssFile.exportData(new File(importSpssWizard.dataFile
 							+ "/" + fileName), fileFormatInfo);
 
 					// create meta data
-					dom = spssFile.getDDI3PhysicalInstance(new URI("file://"
-							+ fileName), fileFormatInfo);
+					dom = spssFile.getDDI3PhysicalInstance(new URI(
+							fileName), fileFormatInfo);
 
 					DdiManager.getInstance().createElementInto(
 							Utils.nodeToString(dom).toString(),
