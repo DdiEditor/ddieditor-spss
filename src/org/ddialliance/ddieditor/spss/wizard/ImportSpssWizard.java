@@ -6,7 +6,6 @@ import java.util.List;
 import org.ddialliance.ddieditor.model.resource.DDIResourceType;
 import org.ddialliance.ddieditor.persistenceaccess.PersistenceManager;
 import org.ddialliance.ddieditor.ui.editor.Editor;
-import org.ddialliance.ddieditor.ui.view.Messages;
 import org.ddialliance.ddiftp.util.DDIFtpException;
 import org.ddialliance.ddiftp.util.Translator;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -134,13 +133,16 @@ public class ImportSpssWizard extends Wizard {
 				setPageComplete(true);
 			}
 		}
-		
+
 		private String readFile(Text pathText) {
 			File file = new File(pathText.getText());
 			if (!new File(pathText.getText()).exists()) {
-				MessageDialog.openError(PlatformUI.getWorkbench().getDisplay()
-						.getActiveShell(), Messages.getString("ErrorTitle"),
-						Translator.trans("spss.filenotfound.message", pathText.getText()));
+				MessageDialog
+						.openError(PlatformUI.getWorkbench().getDisplay()
+								.getActiveShell(), Translator
+								.trans("ErrorTitle"),
+								Translator.trans("spss.filenotfound.message",
+										pathText.getText()));
 				setPageComplete(false);
 				return null;
 			}
@@ -210,7 +212,7 @@ public class ImportSpssWizard extends Wizard {
 				resources = PersistenceManager.getInstance().getResources();
 			} catch (DDIFtpException e) {
 				MessageDialog.openError(PlatformUI.getWorkbench().getDisplay()
-						.getActiveShell(), Messages.getString("ErrorTitle"),
+						.getActiveShell(), Translator.trans("ErrorTitle"),
 						e.getMessage());
 			}
 
@@ -376,9 +378,11 @@ public class ImportSpssWizard extends Wizard {
 					if (e.keyCode == SWT.CR) {
 						File file = new File(pathText.getText());
 						if (!new File(pathText.getText()).exists()) {
-							MessageDialog.openError(PlatformUI.getWorkbench().getDisplay()
-									.getActiveShell(), Messages.getString("ErrorTitle"),
-									Translator.trans("spss.filenotfound.message", pathText.getText()));
+							MessageDialog.openError(PlatformUI.getWorkbench()
+									.getDisplay().getActiveShell(), Translator
+									.trans("ErrorTitle"), Translator.trans(
+									"spss.filenotfound.message",
+									pathText.getText()));
 							return;
 						}
 						dataFile = pathText.getText();

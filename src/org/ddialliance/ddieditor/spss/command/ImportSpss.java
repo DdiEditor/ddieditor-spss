@@ -14,7 +14,6 @@ import org.ddialliance.ddieditor.ui.editor.category.CategorySchemeEditor;
 import org.ddialliance.ddieditor.ui.editor.code.CodeSchemeEditor;
 import org.ddialliance.ddieditor.ui.editor.variable.VariableSchemeEditor;
 import org.ddialliance.ddieditor.ui.util.DialogUtil;
-import org.ddialliance.ddieditor.ui.view.Messages;
 import org.ddialliance.ddieditor.ui.view.ViewManager;
 import org.ddialliance.ddieditor.util.DdiEditorConfig;
 import org.ddialliance.ddiftp.util.Translator;
@@ -93,8 +92,8 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 								"LogicalProduct");
 				if (studList.isEmpty()) {
 					MessageDialog.openConfirm(PlatformUI.getWorkbench()
-							.getDisplay().getActiveShell(), Messages
-							.getString("spss.confirm.title"), Translator
+							.getDisplay().getActiveShell(), Translator
+							.trans("spss.confirm.title"), Translator
 							.trans("spss.confirm.createdditoimportinto"));
 					return;
 				}
@@ -148,7 +147,8 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 											PlatformUI.getWorkbench()
 													.getDisplay()
 													.getActiveShell(),
-											Messages.getString("spss.confirm.title"),
+											Translator
+													.trans("spss.confirm.title"),
 											Translator
 													.trans("spss.confirm.createdditoimportinto"));
 							spssFile.close();
@@ -217,7 +217,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 				// .openConfirm(
 				// PlatformUI.getWorkbench().getDisplay()
 				// .getActiveShell(),
-				// Messages.getString("spss.confirm.title"),
+				// Translator.trans("spss.confirm.title"),
 				// Translator
 				// .trans("spss.confirm.createfrequenciesnotimplemented"));
 				// }
