@@ -458,12 +458,22 @@ public abstract class SPSSVariable {
 		if (!this.categoryMap.isEmpty()) {
 			scheme = doc.createElementNS(
 					SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE, "CodeScheme");
-			if (categorySchemeID == null)
+			
+			// id
+			if (categorySchemeID == null) {
 				categorySchemeID = categorySchemeIdMap.get(this.variableNumber);
-			if (codeSchemeID == null)
+			}
+			if (codeSchemeID == null) {
 				codeSchemeID = getDDI3DefaultCodeSchemeID();
+			}
 			Utils.setDDIMaintainableId(scheme, codeSchemeID);
 			codeSchemeIdMap.put(this.variableNumber, codeSchemeID);
+			
+			// label
+			elem = (Element) scheme.appendChild(doc.createElementNS(
+					SPSSFile.DDI3_REUSABLE_NAMESPACE, "Label"));
+			// TODO set magic character as an option ;- ) 
+			elem.setTextContent("CODS-	V"+this.variableNumber);
 
 			// categorySchemeReference
 			if (createCategoryReference) {
