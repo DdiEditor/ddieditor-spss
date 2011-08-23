@@ -12,6 +12,7 @@ Require-Bundle: util;bundle-version="0.13.0",
  ddieditor;bundle-version="0.7.1",
  org.eclipse.ui;bundle-version="3.6.1",
  org.eclipse.core.runtime;bundle-version="3.6.0",
- lib-java;bundle-version="0.4.3"
+ lib-java;bundle-version="0.4.3",
+ ddieditor-model;bundle-version="0.1.0"
 Bundle-Activator: org.ddialliance.ddieditor.spss.osgi.Activator
 Bundle-ActivationPolicy: lazy
