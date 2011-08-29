@@ -13,6 +13,7 @@ import org.ddialliance.ddieditor.spss.wizard.ImportSpssWizard;
 import org.ddialliance.ddieditor.ui.editor.category.CategorySchemeEditor;
 import org.ddialliance.ddieditor.ui.editor.code.CodeSchemeEditor;
 import org.ddialliance.ddieditor.ui.editor.variable.VariableSchemeEditor;
+import org.ddialliance.ddieditor.ui.model.ElementType;
 import org.ddialliance.ddieditor.ui.util.DialogUtil;
 import org.ddialliance.ddieditor.ui.view.ViewManager;
 import org.ddialliance.ddieditor.util.DdiEditorConfig;
@@ -117,11 +118,40 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 									.getString(DdiEditorConfig.DDI_AGENCY));
 
 					// insert
-					DdiManager.getInstance().createElementInto(
-							Utils.nodeToString(dom).toString(),
-							studyUnitLight.getId(),
-							studyUnitLight.getVersion(),
-							studyUnitLight.getElement());
+					DdiManager
+							.getInstance()
+							.createElement(
+									ElementType.LOGICAL_PRODUCT
+											.getElementName(),
+									Utils.nodeToString(dom).toString(),
+									studyUnitLight.getId(),
+									studyUnitLight.getVersion(),
+									ElementType.STUDY_UNIT.getElementName(),
+									// parentSubElements - elements of parent
+									new String[] { "UserID",
+											"VersionResponsibility",
+											"VersionRationale", "Citation",
+											"Abstract", "UniverseReference",
+											"SeriesStatement",
+											"FundingInformation", "Purpose",
+											"Coverage", "AnalysisUnit",
+											"AnalysisUnitsCovered",
+											"KindOfData", "OtherMaterial",
+											"Note", "Embargo",
+											"ConceptualComponent",
+											"ConceptualComponentReference",
+											"DataCollection",
+											"DataCollectionReference" },
+									// stopElements - do not search below ...
+									new String[] { "PhysicalDataProduct",
+											"PhysicalDataProductReference",
+											"PhysicalInstance",
+											"PhysicalInstanceReference",
+											"Archive", "ArchiveReference",
+											"DDIProfile", "DDIProfileReference" },
+									// jumpElements - jump over elements
+									new String[] { "LogicalProduct",
+											"LogicalProductReference" });
 					dom = null;
 				}
 
@@ -199,8 +229,8 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 							+ "/" + fileName), fileFormatInfo);
 
 					// create meta data
-					dom = spssFile.getDDI3PhysicalInstance(new URI(
-							fileName), fileFormatInfo);
+					dom = spssFile.getDDI3PhysicalInstance(new URI(fileName),
+							fileFormatInfo);
 
 					DdiManager.getInstance().createElementInto(
 							Utils.nodeToString(dom).toString(),
