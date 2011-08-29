@@ -1,14 +1,9 @@
 package org.ddialliance.ddieditor.spss.osgi;
 
-import org.ddialliance.ddieditor.ui.preference.PreferenceConstants;
 import org.ddialliance.ddiftp.util.log.Log;
 import org.ddialliance.ddiftp.util.log.LogFactory;
 import org.ddialliance.ddiftp.util.log.LogType;
-import org.eclipse.core.runtime.Plugin;
-import org.eclipse.core.runtime.preferences.ConfigurationScope;
-import org.eclipse.core.runtime.preferences.IScopeContext;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
-import org.eclipse.ui.preferences.ScopedPreferenceStore;
 import org.osgi.framework.BundleContext;
 
 public class Activator extends AbstractUIPlugin {

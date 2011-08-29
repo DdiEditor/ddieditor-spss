@@ -10,11 +10,11 @@ import org.ddialliance.ddieditor.model.DdiManager;
 import org.ddialliance.ddieditor.model.lightxmlobject.LightXmlObjectType;
 import org.ddialliance.ddieditor.spss.osgi.Activator;
 import org.ddialliance.ddieditor.spss.wizard.ImportSpssWizard;
+import org.ddialliance.ddieditor.ui.editor.Editor;
 import org.ddialliance.ddieditor.ui.editor.category.CategorySchemeEditor;
 import org.ddialliance.ddieditor.ui.editor.code.CodeSchemeEditor;
 import org.ddialliance.ddieditor.ui.editor.variable.VariableSchemeEditor;
 import org.ddialliance.ddieditor.ui.model.ElementType;
-import org.ddialliance.ddieditor.ui.util.DialogUtil;
 import org.ddialliance.ddieditor.ui.view.ViewManager;
 import org.ddialliance.ddieditor.util.DdiEditorConfig;
 import org.ddialliance.ddiftp.util.Translator;
@@ -23,13 +23,12 @@ import org.ddialliance.ddiftp.util.log.LogFactory;
 import org.ddialliance.ddiftp.util.log.LogType;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.runtime.preferences.ConfigurationScope;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.swt.custom.BusyIndicator;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.preferences.ScopedPreferenceStore;
+import org.eclipse.ui.internal.dialogs.DialogUtil;
 import org.opendatafoundation.data.FileFormatInfo;
 import org.opendatafoundation.data.FileFormatInfo.ASCIIFormat;
 import org.opendatafoundation.data.FileFormatInfo.Format;
@@ -40,9 +39,6 @@ import org.w3c.dom.Document;
 
 public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 	private Log log = LogFactory.getLog(LogType.SYSTEM, ImportSpss.class);
-
-	ScopedPreferenceStore preferenceStore = new ScopedPreferenceStore(
-			new ConfigurationScope(), "ddieditor-ui");
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
@@ -114,8 +110,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 					exportOptions.createCategories = false;
 
 					dom = spssFile.getDDI3LogicalProduct(exportOptions, null,
-							preferenceStore
-									.getString(DdiEditorConfig.DDI_AGENCY));
+							DdiEditorConfig.get(DdiEditorConfig.DDI_AGENCY));
 
 					// insert
 					DdiManager
@@ -282,9 +277,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 					}
 				}
 			} catch (Exception e) {
-				DialogUtil.errorDialog(PlatformUI.getWorkbench().getDisplay()
-						.getActiveShell(), Activator.PLUGIN_ID,
-						Translator.trans("spss.errortitle"), e.getMessage(), e);
+				Editor.showError(e, Activator.PLUGIN_ID);
 			} finally {
 				if (spssFile != null) {
 					try {
