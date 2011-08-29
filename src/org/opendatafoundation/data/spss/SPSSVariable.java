@@ -473,7 +473,7 @@ public abstract class SPSSVariable {
 			elem = (Element) scheme.appendChild(doc.createElementNS(
 					SPSSFile.DDI3_REUSABLE_NAMESPACE, "Label"));
 			// TODO set magic character as an option ;- ) 
-			elem.setTextContent("CODS-	V"+this.variableNumber);
+			elem.setTextContent("V"+this.variableNumber+"-CODS");
 
 			// categorySchemeReference
 			if (createCategoryReference) {
