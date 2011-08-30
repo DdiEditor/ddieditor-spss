@@ -8,6 +8,7 @@ import java.util.List;
 import org.apache.xmlbeans.XmlObject;
 import org.ddialliance.ddieditor.model.DdiManager;
 import org.ddialliance.ddieditor.model.lightxmlobject.LightXmlObjectType;
+import org.ddialliance.ddieditor.persistenceaccess.PersistenceManager;
 import org.ddialliance.ddieditor.spss.osgi.Activator;
 import org.ddialliance.ddieditor.spss.wizard.ImportSpssWizard;
 import org.ddialliance.ddieditor.ui.editor.Editor;
@@ -17,6 +18,7 @@ import org.ddialliance.ddieditor.ui.editor.variable.VariableSchemeEditor;
 import org.ddialliance.ddieditor.ui.model.ElementType;
 import org.ddialliance.ddieditor.ui.view.ViewManager;
 import org.ddialliance.ddieditor.util.DdiEditorConfig;
+import org.ddialliance.ddiftp.util.DDIFtpException;
 import org.ddialliance.ddiftp.util.Translator;
 import org.ddialliance.ddiftp.util.log.Log;
 import org.ddialliance.ddiftp.util.log.LogFactory;
@@ -28,7 +30,6 @@ import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.swt.custom.BusyIndicator;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.internal.dialogs.DialogUtil;
 import org.opendatafoundation.data.FileFormatInfo;
 import org.opendatafoundation.data.FileFormatInfo.ASCIIFormat;
 import org.opendatafoundation.data.FileFormatInfo.Format;
@@ -279,6 +280,15 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 			} catch (Exception e) {
 				Editor.showError(e, Activator.PLUGIN_ID);
 			} finally {
+				// persistence manager housekeeping
+				try {
+					PersistenceManager.getInstance().getPersistenceStorage()
+							.houseKeeping();
+				} catch (Exception e) {
+					new DDIFtpException(e);
+				}
+
+				// spss file close
 				if (spssFile != null) {
 					try {
 						spssFile.close();

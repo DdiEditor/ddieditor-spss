@@ -6,6 +6,8 @@ import java.util.List;
 import org.ddialliance.ddieditor.model.resource.DDIResourceType;
 import org.ddialliance.ddieditor.persistenceaccess.PersistenceManager;
 import org.ddialliance.ddieditor.ui.editor.Editor;
+import org.ddialliance.ddieditor.ui.preference.PreferenceConstants;
+import org.ddialliance.ddieditor.ui.preference.PreferenceUtil;
 import org.ddialliance.ddiftp.util.DDIFtpException;
 import org.ddialliance.ddiftp.util.Translator;
 import org.eclipse.core.runtime.preferences.ConfigurationScope;
@@ -63,7 +65,7 @@ public class ImportSpssWizard extends Wizard {
 
 	ScopedPreferenceStore preferenceStore = new ScopedPreferenceStore(
 			ConfigurationScope.INSTANCE, "ddieditor-ui");
-	
+
 	@Override
 	public void addPages() {
 		addPage(new ResourcePage());
@@ -200,8 +202,12 @@ public class ImportSpssWizard extends Wizard {
 					fileChooser.setFilterExtensions(new String[] { "*.sav" });
 					fileChooser.setFilterNames(new String[] { Translator
 							.trans("spss.filechooser.filternames") });
-					fileChooser.setFilterPath(new File("/home/ddajvj/download").getAbsolutePath());
+					String t = preferenceStore
+							.getString(PreferenceConstants.DDIEDITORUI_LANGUAGE);
+
+					PreferenceUtil.setPathFilter(fileChooser);
 					spssFile = fileChooser.open();
+					PreferenceUtil.setLastBrowsedPath(spssFile);
 
 					pathText.setText(spssFile);
 					pageComplete();
@@ -406,7 +412,9 @@ public class ImportSpssWizard extends Wizard {
 					dirChooser.setText(Translator
 							.trans("spss.wizard.datafilepage.exportdir"));
 
+					PreferenceUtil.setPathFilter(dirChooser);
 					dataFile = dirChooser.open();
+					PreferenceUtil.setLastBrowsedPath(dataFile);
 
 					pathText.setText(dataFile);
 					pageComplete();
