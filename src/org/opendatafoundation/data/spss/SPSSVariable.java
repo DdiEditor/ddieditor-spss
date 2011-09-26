@@ -923,6 +923,7 @@ public abstract class SPSSVariable {
 			break;
 		case 29:
 			typeStr = unsurpportedInDDI3;
+			break;
 		case 30:
 			typeStr = unsurpportedInDDI3;
 			break;
