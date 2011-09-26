@@ -142,7 +142,6 @@ public class ImportSpssWizard extends Wizard {
 		}
 
 		private String readFile(Text pathText) {
-			File file = new File(pathText.getText());
 			if (!new File(pathText.getText()).exists()) {
 				MessageDialog
 						.openError(PlatformUI.getWorkbench().getDisplay()
@@ -388,7 +387,6 @@ public class ImportSpssWizard extends Wizard {
 				public void keyReleased(KeyEvent e) {
 					// on a CR - check if file exist
 					if (e.keyCode == SWT.CR) {
-						File file = new File(pathText.getText());
 						if (!new File(pathText.getText()).exists()) {
 							MessageDialog.openError(PlatformUI.getWorkbench()
 									.getDisplay().getActiveShell(), Translator

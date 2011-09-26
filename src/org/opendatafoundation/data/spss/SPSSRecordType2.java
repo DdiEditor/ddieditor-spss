@@ -174,6 +174,8 @@ public class SPSSRecordType2 extends SPSSAbstractRecordType {
 		case 39:
 			label = "SDATE";
 			break;
+		default:
+			break;
 		}
 		return (label);
 	}
