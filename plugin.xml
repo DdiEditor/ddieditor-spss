@@ -4,8 +4,8 @@
    <extension
          point="org.eclipse.ui.commands">
       <command
-            defaultHandler="org.ddialliance.ddieditor.spss.command.ImportSpss"
-            id="org.ddialliance.ddieditor.spss.command.ImportSpss"
+            defaultHandler="dk.dda.ddieditor.spss.command.ImportSpss"
+            id="dk.dda.ddieditor.spss.command.ImportSpss"
             name="Import SPSS">
       </command>
    </extension>
@@ -14,7 +14,7 @@
       <menuContribution
             locationURI="menu:filemenu-importmenu?after=merge-ddi">
          <command
-               commandId="org.ddialliance.ddieditor.spss.command.ImportSpss"
+               commandId="dk.dda.ddieditor.spss.command.ImportSpss"
                icon="icons/Document.png"
                id="import-study-level-info"
                label="SPSS file"
