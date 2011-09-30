@@ -1,8 +1,8 @@
 DdiEditor-SPSS
 
 Module description:
-The ddieditor-spss is a module for converting statistical SPSS files into 
-DDI-Lifecycle metadata and data file.
+The ddieditor-spss is a module in the DdiEditor framework for converting
+ statistical SPSS files into DDI-Lifecycle metadata and data file.
 
 The main parts of the ddieditor-spss module is based on the Data Exchange Tools
  (DExT) project done by the UK Data Archive at the University of Essex and 
