@@ -6,11 +6,9 @@ import java.util.List;
 import org.ddialliance.ddieditor.model.resource.DDIResourceType;
 import org.ddialliance.ddieditor.persistenceaccess.PersistenceManager;
 import org.ddialliance.ddieditor.ui.editor.Editor;
-import org.ddialliance.ddieditor.ui.preference.PreferenceConstants;
 import org.ddialliance.ddieditor.ui.preference.PreferenceUtil;
 import org.ddialliance.ddiftp.util.DDIFtpException;
 import org.ddialliance.ddiftp.util.Translator;
-import org.eclipse.core.runtime.preferences.ConfigurationScope;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
@@ -32,7 +30,6 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
 public class ImportSpssWizard extends Wizard {
 	private List<DDIResourceType> resources = null;
@@ -62,9 +59,6 @@ public class ImportSpssWizard extends Wizard {
 
 	DataFilePage dataFilePage = null;
 	ReportPage reportPage = null;
-
-	ScopedPreferenceStore preferenceStore = new ScopedPreferenceStore(
-			ConfigurationScope.INSTANCE, "ddieditor-ui");
 
 	@Override
 	public void addPages() {
@@ -201,9 +195,7 @@ public class ImportSpssWizard extends Wizard {
 					fileChooser.setFilterExtensions(new String[] { "*.sav" });
 					fileChooser.setFilterNames(new String[] { Translator
 							.trans("spss.filechooser.filternames") });
-					String t = preferenceStore
-							.getString(PreferenceConstants.DDIEDITORUI_LANGUAGE);
-
+					
 					PreferenceUtil.setPathFilter(fileChooser);
 					spssFile = fileChooser.open();
 					PreferenceUtil.setLastBrowsedPath(spssFile);
