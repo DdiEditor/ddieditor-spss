@@ -165,7 +165,11 @@ public class SPSSDataRecord {
                         }
                         else {
                             // string variable
-                            throw new SPSSFileException("Error reading data: unexpected compression code for string variable"); 
+                        	
+                        	// commet out 20111020, reason on import more than once exception thrown on same data file!
+                        	
+                            //throw new SPSSFileException("Error reading data: unexpected compression code for string variable"); 
+                        	//System.out.println(var.variableName+" - "+var.type);
                         }
                         break;
                     }
