@@ -69,7 +69,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 	/**
 	 * Runnable wrapping spss import
 	 */
-	class SpssImportRunnable implements Runnable {
+	public static class SpssImportRunnable implements Runnable {
 		ImportSpssWizard importSpssWizard;
 
 		public SpssImportRunnable(ImportSpssWizard importSpssWizard) {
@@ -293,6 +293,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 				if (spssFile != null) {
 					try {
 						spssFile.close();
+						spssFile = null;
 					} catch (IOException e) {
 						// do nothing
 					}
