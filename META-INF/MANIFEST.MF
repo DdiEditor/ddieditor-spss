@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: DdiEditor-SPSS
 Bundle-SymbolicName: ddieditor-spss;singleton:=true
-Bundle-Version: 0.10.0
+Bundle-Version: 0.11.0
 Bundle-Vendor: Danish Data Archive
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Export-Package: dk.dda.ddieditor.spss.command,
