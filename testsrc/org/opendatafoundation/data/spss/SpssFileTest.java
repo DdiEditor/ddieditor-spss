@@ -28,7 +28,7 @@ import org.w3c.dom.Document;
 */
 
 public class SpssFileTest {
-	String path = "resources/sps14069.sav";
+	String path = "resources/eksempler_manual.sav";
 	File file = new File(path);
 	String outFilePath = file.getName() + ".xml";
 
