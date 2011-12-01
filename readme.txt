@@ -30,7 +30,7 @@ along with ddieditor-spss. If not, see <http://www.gnu.org/licenses/>.
 
 Building:
 The project uses an ANT build file
-Buildfile: build.xml
+Buildfile: dda-build.xml
 Notice: Currently the project only builds when it and its dependencies are setup
 within an Eclipse enviroment.
 
