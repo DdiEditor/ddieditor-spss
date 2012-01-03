@@ -3,8 +3,9 @@ Bundle-ManifestVersion: 2
 Bundle-Name: DdiEditor SPSS
 Bundle-SymbolicName: ddieditor-spss;singleton:=true
 Bundle-Version: 0.12.0
+Bundle-ClassPath: ddieditor-spss
+Bundle-Activator: dk.dda.ddieditor.spss.osgi.Activator
 Bundle-Vendor: Danish Data Archive
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Export-Package: dk.dda.ddieditor.spss.command,
  dk.dda.ddieditor.spss.wizard,
  org.opendatafoundation.data,
@@ -16,5 +17,5 @@ Require-Bundle: util;bundle-version="0.18.0",
  lib-java;bundle-version="0.4.3",
  ddieditor-model;bundle-version="0.1.0",
  ddieditor-ui;bundle-version="0.10.0"
-Bundle-Activator: dk.dda.ddieditor.spss.osgi.Activator
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ActivationPolicy: lazy
