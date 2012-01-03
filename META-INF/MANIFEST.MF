@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: DdiEditor SPSS
 Bundle-SymbolicName: ddieditor-spss;singleton:=true
 Bundle-Version: 0.12.0
-Bundle-ClassPath: ddieditor-spss
+Bundle-ClassPath: ., bin
 Bundle-Activator: dk.dda.ddieditor.spss.osgi.Activator
 Bundle-Vendor: Danish Data Archive
 Export-Package: dk.dda.ddieditor.spss.command,
