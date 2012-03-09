@@ -44,6 +44,8 @@ import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import dk.dda.ddieditor.spss.SPSSMeasure;
+
 /**
  * Abstract base class for SPSS variable
  * 
@@ -458,7 +460,7 @@ public abstract class SPSSVariable {
 		if (!this.categoryMap.isEmpty()) {
 			scheme = doc.createElementNS(
 					SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE, "CodeScheme");
-			
+
 			// id
 			if (categorySchemeID == null) {
 				categorySchemeID = categorySchemeIdMap.get(this.variableNumber);
@@ -468,12 +470,12 @@ public abstract class SPSSVariable {
 			}
 			Utils.setDDIMaintainableId(scheme, codeSchemeID);
 			codeSchemeIdMap.put(this.variableNumber, codeSchemeID);
-			
+
 			// label
 			elem = (Element) scheme.appendChild(doc.createElementNS(
 					SPSSFile.DDI3_REUSABLE_NAMESPACE, "Label"));
-			// TODO set magic character as an option ;- ) 
-			elem.setTextContent("V"+this.variableNumber+"-CODS");
+			// TODO set magic character as an option ;- )
+			elem.setTextContent("V" + this.variableNumber + "-CODS");
 
 			// categorySchemeReference
 			if (createCategoryReference) {
@@ -721,7 +723,7 @@ public abstract class SPSSVariable {
 		var = doc.createElementNS(SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 				"Variable");
 		variableIdMap.put(variableNumber,
-				spssFile.createId(ElementType.VARIABLE, variableNumber));
+				spssFile.createId(ElementType.VARIABLE));
 		Utils.setDDIVersionableId(var, variableIdMap.get(variableNumber));
 
 		// variable name
@@ -760,6 +762,7 @@ public abstract class SPSSVariable {
 						.appendChild(doc.createElementNS(
 								SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 								"CodeRepresentation"));
+				setMeasure(codeRepresentation);
 				Element codeSchemeReference = (Element) codeRepresentation
 						.appendChild(doc.createElementNS(
 								SPSSFile.DDI3_REUSABLE_NAMESPACE,
@@ -779,6 +782,7 @@ public abstract class SPSSVariable {
 							.createElementNS(
 									SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 									"NumericRepresentation"));
+					setMeasure(elem);
 					if (dataType != null)
 						elem.setAttribute("type", dataType);
 					// - decimal position
@@ -808,6 +812,7 @@ public abstract class SPSSVariable {
 							.createElementNS(
 									SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 									"DateTimeRepresentation"));
+					setMeasure(elem);
 					if (dataType != null)
 						elem.setAttribute("type", dataType);
 					elem.setAttribute("format", this.getSPSSFormat());
@@ -818,11 +823,20 @@ public abstract class SPSSVariable {
 							.createElementNS(
 									SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 									"TextRepresentation"));
+					setMeasure(elem);
 					elem.setAttribute("maxLength", "" + this.getLength());
 				}
 			}
 		}
 		return (var);
+	}
+
+	private void setMeasure(Element elem) {
+		SPSSMeasure measureEnum = SPSSMeasure.intToSpssMeasure(this.measure);
+		if (measureEnum == null) {
+			measureEnum = SPSSMeasure.ORDINAL;
+		}
+		elem.setAttribute("classificationLevel", measureEnum.classificationLevel());
 	}
 
 	/**
