@@ -169,7 +169,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 											"DDIProfile", "DDIProfileReference" },
 									// jumpElements - jump over elements
 									new String[] { "LogicalProduct",
-											"LogicalProductReference" });
+											"studyunit__LogicalProductReference" });
 					dom = null;
 				}
 
