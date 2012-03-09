@@ -40,11 +40,14 @@ import java.io.RandomAccessFile;
 import java.io.Writer;
 import java.net.URI;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -62,6 +65,9 @@ import org.opendatafoundation.data.Utils;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 /**
  * A class to read SPSS files, produce DDI compatible metadata and export the
@@ -116,6 +122,10 @@ public class SPSSFile extends RandomAccessFile {
 	SPSSRecordType7Subtype5 variableSetsInformationRecord;
 	SPSSRecordType7Subtype11 variableDisplayParamsRecord;
 	SPSSRecordType7Subtype13 longVariableNamesRecord;
+	SPSSRecordType7Subtype14 longStringRecord;
+	Map<String, String> longStringRecordMap = new LinkedHashMap<String, String>();
+	Map<String, String> longStringRecordLabelMap = new LinkedHashMap<String, String>();
+
 	public boolean isMetadataLoaded = false;
 
 	// SPSS Data (actual values stored in variables)
@@ -305,16 +315,33 @@ public class SPSSFile extends RandomAccessFile {
 					&& dataFormat.namesOnFirstLine) {
 				String recordStr = "";
 				Iterator varIterator = variableMap.keySet().iterator();
+				boolean isLongStringVar = false;
 				int n = 1;
 				while (varIterator.hasNext()) {
-					SPSSVariable var = variableMap.get(varIterator.next());
+					isLongStringVar = false;
 					if (n > 1) {
-						if (dataFormat.asciiFormat == FileFormatInfo.ASCIIFormat.CSV)
-							recordStr += ",";
-						else
-							recordStr += dataFormat.asciiDelimiter;
+						SPSSVariable var = variableMap.get(varIterator.next());
+						if (var.variableRecord != null
+								&& longStringRecordLabelMap
+										.get(var.variableRecord.label) != null) {
+							// var.variableRecord.label
+							String orgarName = longStringRecordLabelMap
+									.get(var.variableRecord.label);
+							if (!orgarName.equals(var.variableName)) {
+								isLongStringVar = true;
+							}
+						}
+
+						if (!isLongStringVar) {
+							if (dataFormat.asciiFormat == FileFormatInfo.ASCIIFormat.CSV)
+								recordStr += ",";
+							else
+								recordStr += dataFormat.asciiDelimiter;
+							recordStr += var.getName();
+						} else {
+							System.out.println(var.variableName);
+						}
 					}
-					recordStr += var.getName();
 					n++;
 				}
 				out.write(recordStr + "\n");
@@ -692,11 +719,18 @@ public class SPSSFile extends RandomAccessFile {
 					.createElementNS(SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
 			elem.setTextContent(this.getDDI3DefaultVariableSchemeID());
 
+			//
+			// starts var iterator
+			//
+
 			// Create category schemes (one per variable with label set)
 			Iterator varIterator = variableMap.keySet().iterator();
 			if (exportOptions.createCategories) {
 				while (varIterator.hasNext()) {
 					SPSSVariable var = variableMap.get(varIterator.next());
+					if (checkForLongString(var)) {
+						continue;
+					}
 					if (var.hasValueLabels()) {
 						logicalProduct.appendChild(var
 								.createDDI3CategoryScheme(doc));
@@ -710,6 +744,9 @@ public class SPSSFile extends RandomAccessFile {
 			varIterator = variableMap.keySet().iterator();
 			while (varIterator.hasNext()) {
 				SPSSVariable var = variableMap.get(varIterator.next());
+				if (checkForLongString(var)) {
+					continue;
+				}
 				if (var.hasValueLabels()) {
 					logicalProduct.appendChild(var.createDDI3CodeScheme(doc,
 							exportOptions.createCategories));
@@ -727,7 +764,77 @@ public class SPSSFile extends RandomAccessFile {
 			varIterator = variableMap.keySet().iterator();
 			while (varIterator.hasNext()) {
 				SPSSVariable var = variableMap.get(varIterator.next());
-				varScheme.appendChild(var.createDDI3Variable(doc));
+
+				boolean checkForLongString = checkForLongString(var);
+				boolean found = false;
+				if (checkForLongString) {
+					// reset length to max
+					NodeList nodeList = varScheme.getChildNodes();
+					for (int i = 0; i < nodeList.getLength(); i++) {
+						// if (found) {
+						// break;
+						// }
+						Node node = nodeList.item(i);
+
+						// locate right variable
+						String varName = "";
+						if (node.getFirstChild().getLocalName()
+								.equals("VariableName")) {
+							varName = node.getFirstChild().getFirstChild()
+									.getNodeValue();
+							for (Entry<String, String> entry : longStringRecordMap
+									.entrySet()) {
+								System.out.println(varName + " -- "
+										+ entry.getKey());
+								// Vxx equals Vxx
+								if (varName.equals(entry.getKey())) {
+									System.out
+											.println("selected -- " + varName);
+									// navigate to representation
+									for (Node childNode = node.getFirstChild(); childNode != null;) {
+										Node nextChild = childNode
+												.getNextSibling();
+										if (childNode.getLocalName().equals(
+												"Representation")) {
+											if (childNode.getFirstChild() != null
+													&& childNode
+															.getFirstChild()
+															.getLocalName()
+															.equals("TextRepresentation")) {
+												if (childNode
+														.getFirstChild()
+														.getAttributes()
+														.getNamedItem(
+																"maxLength") != null) {
+
+													// set max length
+													String value = entry
+															.getValue();
+													childNode
+															.getFirstChild()
+															.getAttributes()
+															.getNamedItem(
+																	"maxLength")
+															.setNodeValue(value);
+													found = true;
+												}
+											}
+										}
+										childNode = nextChild;
+									}
+								}
+								// if (found) {
+								// break;
+								// }
+							}
+						}
+					}
+					continue;
+				}
+
+				Element variable = var.createDDI3Variable(doc);
+				varScheme.appendChild(variable);
+
 				// System.out.println("name: " + var.getName());
 				// System.out.println("var: " + var.getDDI3DataType());
 				// System.out.println("Rep.-type: "
@@ -738,6 +845,14 @@ public class SPSSFile extends RandomAccessFile {
 					+ e.getMessage());
 		}
 		return (doc);
+	}
+
+	private boolean checkForLongString(SPSSVariable var) {
+		String name = longStringRecordLabelMap.get(var.getLabel());
+		if (name != null && !name.equals(var.getName())) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -1391,16 +1506,33 @@ public class SPSSFile extends RandomAccessFile {
 		// read variables
 		Iterator varIterator = variableMap.keySet().iterator();
 		int n = 1;
+		boolean isLongStringVar = false;
 		while (varIterator.hasNext()) {
+			SPSSVariable var = variableMap.get(varIterator.next());
+			isLongStringVar = false;
+
 			// prefix
 			if (n > 1) {
-				if (dataFormat.asciiFormat == FileFormatInfo.ASCIIFormat.DELIMITED)
-					recordStr += dataFormat.asciiDelimiter;
-				else if (dataFormat.asciiFormat == FileFormatInfo.ASCIIFormat.CSV)
-					recordStr += ",";
+				// fix B
+				if (var.variableRecord != null
+						&& longStringRecordLabelMap
+								.get(var.variableRecord.label) != null) {				
+					String orgarName = longStringRecordLabelMap
+							.get(var.variableRecord.label);
+					if (!orgarName.equals(var.variableName)) {
+						isLongStringVar = true;
+					}
+				}
+
+				if (!isLongStringVar) {
+					if (dataFormat.asciiFormat == FileFormatInfo.ASCIIFormat.DELIMITED)
+						recordStr += dataFormat.asciiDelimiter;
+					else if (dataFormat.asciiFormat == FileFormatInfo.ASCIIFormat.CSV)
+						recordStr += ",";
+				}
 			}
+
 			// value
-			SPSSVariable var = variableMap.get(varIterator.next());
 			recordStr += var.getValueAsString(0, dataFormat);
 			n++;
 		}
@@ -1513,6 +1645,10 @@ public class SPSSFile extends RandomAccessFile {
 			type2Record.read(this);
 
 			// ignore string continuation records (variableTypeCode = -1)
+			// if (type2Record.variableTypeCode == -1) {
+			// log(type2Record.toString());
+			// System.out.println("break");
+			// }
 			if (type2Record.variableTypeCode >= 0) {
 				log(type2Record.toString());
 
@@ -1664,7 +1800,7 @@ public class SPSSFile extends RandomAccessFile {
 				case 11: // Variable display parameters
 					variableDisplayParamsRecord = new SPSSRecordType7Subtype11();
 					variableDisplayParamsRecord.read(this);
-					log(variableDisplayParamsRecord.toString());
+					// log(variableDisplayParamsRecord.toString());
 					// update variables
 					varIndex = 0;
 					for (SPSSRecordType7Subtype11.VariableDisplayParams params : variableDisplayParamsRecord.variableDisplayParams) {
@@ -1696,8 +1832,21 @@ public class SPSSFile extends RandomAccessFile {
 						varIndex++;
 					}
 					break;
-				default: // generic type 7
+				case 14:
+					longStringRecord = new SPSSRecordType7Subtype14();
+					longStringRecord.read(this);
+					longStringRecordMap.putAll(longStringRecord.nameMap);
 
+					for (String key : longStringRecordMap.keySet()) {
+						for (SPSSVariable var : variableMap.values()) {
+							if (var.variableName.equals(key)) {
+								longStringRecordLabelMap.put(var.getLabel(),
+										key);
+							}
+						}
+					}
+					break;
+				default: // generic type 7
 					SPSSRecordType7 record7 = new SPSSRecordType7();
 					record7.read(this);
 					log(record7.toString());
