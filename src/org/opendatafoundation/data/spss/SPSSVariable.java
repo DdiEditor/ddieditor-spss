@@ -763,6 +763,7 @@ public abstract class SPSSVariable {
 								SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 								"CodeRepresentation"));
 				setMeasure(codeRepresentation);
+				setMissingValue(codeRepresentation);
 				Element codeSchemeReference = (Element) codeRepresentation
 						.appendChild(doc.createElementNS(
 								SPSSFile.DDI3_REUSABLE_NAMESPACE,
@@ -788,21 +789,7 @@ public abstract class SPSSVariable {
 					// - decimal position
 					elem.setAttribute("decimalPositions",
 							"" + this.getDecimals());
-					// - missing values
-					Iterator catIterator = missingCategoryMap.keySet()
-							.iterator();
-					StringBuilder missing = new StringBuilder();
-					while (catIterator.hasNext()) {
-						String key = (String) catIterator.next();
-						SPSSVariableCategory cat = missingCategoryMap.get(key);
-						missing.append(cat.strValue);
-						if (catIterator.hasNext()) {
-							missing.append(" ");
-						}
-					}
-					if (missing.length() > 0) {
-						elem.setAttribute("missingValue", missing.toString());
-					}
+					setMissingValue(elem);
 					// TODO: DDI3: add @format attribute to schema
 					// elem.setAttribute("format", this.getSPSSFormat());
 				}
@@ -816,6 +803,7 @@ public abstract class SPSSVariable {
 					if (dataType != null)
 						elem.setAttribute("type", dataType);
 					elem.setAttribute("format", this.getSPSSFormat());
+					setMissingValue(elem);
 				}
 				if (getDDI3RepresentationType() == DDI3RepresentationType.TEXT) {
 					// string representation
@@ -825,6 +813,7 @@ public abstract class SPSSVariable {
 									"TextRepresentation"));
 					setMeasure(elem);
 					elem.setAttribute("maxLength", "" + this.getLength());
+					setMissingValue(elem);
 				}
 			}
 		}
@@ -837,6 +826,24 @@ public abstract class SPSSVariable {
 			measureEnum = SPSSMeasure.ORDINAL;
 		}
 		elem.setAttribute("classificationLevel", measureEnum.classificationLevel());
+	}
+	
+	private void setMissingValue(Element elem) {
+		// - missing values
+		Iterator catIterator = missingCategoryMap.keySet()
+				.iterator();
+		StringBuilder missing = new StringBuilder();
+		while (catIterator.hasNext()) {
+			String key = (String) catIterator.next();
+			SPSSVariableCategory cat = missingCategoryMap.get(key);
+			missing.append(cat.strValue);
+			if (catIterator.hasNext()) {
+				missing.append(" ");
+			}
+		}
+		if (missing.length() > 0) {
+			elem.setAttribute("missingValue", missing.toString());
+		}	
 	}
 
 	/**
