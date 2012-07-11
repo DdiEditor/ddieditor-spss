@@ -40,25 +40,25 @@ import dk.dda.ddieditor.spss.osgi.Activator;
 import dk.dda.ddieditor.spss.wizard.ImportSpssWizard;
 
 /*
-* Copyright 2011 Danish Data Archive (http://www.dda.dk) 
-* 
-* This program is free software; you can redistribute it and/or modify it 
-* under the terms of the GNU Lesser General Public License as published by
-* the Free Software Foundation; either Version 3 of the License, or 
-* (at your option) any later version.
-* 
-* This program is distributed in the hope that it will be useful, 
-* but WITHOUT ANY WARRANTY; without even the implied warranty of 
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See the GNU Lesser General Public License for more details.
-*  
-* You should have received a copy of the GNU Lesser General Public 
-* License along with this library; if not, write to the 
-* Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, 
-* Boston, MA  02110-1301  USA
-* The full text of the license is also available on the Internet at 
-* http://www.gnu.org/copyleft/lesser.html
-*/
+ * Copyright 2011 Danish Data Archive (http://www.dda.dk) 
+ * 
+ * This program is free software; you can redistribute it and/or modify it 
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either Version 3 of the License, or 
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Lesser General Public License for more details.
+ *  
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with this library; if not, write to the 
+ * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Boston, MA  02110-1301  USA
+ * The full text of the license is also available on the Internet at 
+ * http://www.gnu.org/copyleft/lesser.html
+ */
 
 public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 	private Log log = LogFactory.getLog(LogType.SYSTEM, ImportSpss.class);
@@ -105,26 +105,38 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 			// import
 			SPSSFile spssFile = null;
 			try {
+				//
 				// study unit
+				//
+				LightXmlObjectType studyUnitLight = null;
+				
+				// check for study unit
 				List<LightXmlObjectType> studList = DdiManager.getInstance()
 						.checkForParent(
 								SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 								"LogicalProduct");
-				if (studList.isEmpty()) {
+				if (studList.isEmpty()
+						|| studList
+								.get(0)
+								.getElement()
+								.equals(ElementType.RESOURCE_PACKAGE
+										.getElementName())) {
 					MessageDialog.openConfirm(PlatformUI.getWorkbench()
 							.getDisplay().getActiveShell(), Translator
 							.trans("spss.confirm.title"), Translator
 							.trans("spss.confirm.createdditoimportinto"));
 					return;
 				}
-				LightXmlObjectType studyUnitLight = studList.get(0);
+				studyUnitLight = studList.get(0);
 
 				// init spss file
 				DdiManager.getInstance().setWorkingDocument(
 						importSpssWizard.selectedResource.getOrgName());
 				spssFile = new SPSSFile(importSpssWizard.spssFile);
 
+				//
 				// logical product
+				//
 				if (importSpssWizard.variable) {
 					spssFile.loadMetadata();
 					ExportOptions exportOptions = new ExportOptions();
@@ -135,45 +147,52 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 					dom = spssFile.getDDI3LogicalProduct(exportOptions, null,
 							DdiEditorConfig.get(DdiEditorConfig.DDI_AGENCY));
 
-					// insert
-					DdiManager
-							.getInstance()
-							.createElement(
-									ElementType.LOGICAL_PRODUCT
-											.getElementName(),
-									Utils.nodeToString(dom).toString(),
-									studyUnitLight.getId(),
-									studyUnitLight.getVersion(),
-									ElementType.STUDY_UNIT.getElementName(),
-									// parentSubElements - elements of parent
-									new String[] { "UserID",
-											"VersionResponsibility",
-											"VersionRationale", "Citation",
-											"Abstract", "UniverseReference",
-											"SeriesStatement",
-											"FundingInformation", "Purpose",
-											"Coverage", "AnalysisUnit",
-											"AnalysisUnitsCovered",
-											"KindOfData", "OtherMaterial",
-											"Note", "Embargo",
-											"ConceptualComponent",
-											"ConceptualComponentReference",
-											"DataCollection",
-											"DataCollectionReference" },
-									// stopElements - do not search below ...
-									new String[] { "PhysicalDataProduct",
-											"PhysicalDataProductReference",
-											"PhysicalInstance",
-											"PhysicalInstanceReference",
-											"Archive", "ArchiveReference",
-											"DDIProfile", "DDIProfileReference" },
-									// jumpElements - jump over elements
-									new String[] { "LogicalProduct",
-											"studyunit__LogicalProductReference" });
+					if (spssFile.reuseLogicalProductLightXmlObject == null) {
+						// insert
+						DdiManager.getInstance().createElement(
+								ElementType.LOGICAL_PRODUCT.getElementName(),
+								Utils.nodeToString(dom).toString(),
+								studyUnitLight.getId(),
+								studyUnitLight.getVersion(),
+								ElementType.STUDY_UNIT.getElementName(),
+								// parentSubElements - elements of parent
+								new String[] { "UserID",
+										"VersionResponsibility",
+										"VersionRationale", "Citation",
+										"Abstract", "UniverseReference",
+										"SeriesStatement",
+										"FundingInformation", "Purpose",
+										"Coverage", "AnalysisUnit",
+										"AnalysisUnitsCovered", "KindOfData",
+										"OtherMaterial", "Note", "Embargo",
+										"ConceptualComponent",
+										"ConceptualComponentReference",
+										"DataCollection",
+										"DataCollectionReference" },
+								// stopElements - do not search below ...
+								new String[] { "PhysicalDataProduct",
+										"PhysicalDataProductReference",
+										"PhysicalInstance",
+										"PhysicalInstanceReference", "Archive",
+										"ArchiveReference", "DDIProfile",
+										"DDIProfileReference" },
+								// jumpElements - jump over elements
+								new String[] { "LogicalProduct",
+										"studyunit__LogicalProductReference" });
+					} else {
+						// update
+						DdiManager.getInstance().updateElement(
+								Utils.nodeToString(dom).toString(),
+								ElementType.LOGICAL_PRODUCT.getElementName(),
+								dom.getDocumentElement().getAttribute("id"),
+								dom.getDocumentElement()
+										.getAttribute("version"));
+					}
 					dom = null;
 				}
-
+				//
 				// physical data product
+				//
 				if (importSpssWizard.variableRec) {
 					if (!spssFile.isMetadataLoaded) {
 						spssFile.loadMetadata();
@@ -229,7 +248,9 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 					}
 				}
 
+				//
 				// physical instance and dat file
+				//
 				if (importSpssWizard.variableDataFile) {
 					if (!spssFile.isMetadataLoaded) {
 						spssFile.loadMetadata();
@@ -258,7 +279,9 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 					dom = null;
 				}
 
+				//
 				// frequencies
+				//
 				// if (importSpssWizard.frequency) {
 				// TODO use phyton spss oms export plus xslt import
 				// MessageDialog

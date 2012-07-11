@@ -29,10 +29,12 @@ package org.opendatafoundation.data.spss;
  * 
  */
 
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 /**
  * Various utility functions

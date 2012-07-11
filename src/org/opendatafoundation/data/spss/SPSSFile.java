@@ -53,9 +53,14 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 
+import org.ddialliance.ddi3.xml.xmlbeans.logicalproduct.LogicalProductDocument;
 import org.ddialliance.ddi3.xml.xmlbeans.reusable.ReferenceType;
 import org.ddialliance.ddieditor.logic.identification.IdentificationGenerator;
 import org.ddialliance.ddieditor.logic.identification.IdentificationManager;
+import org.ddialliance.ddieditor.model.DdiManager;
+import org.ddialliance.ddieditor.model.lightxmlobject.LightXmlObjectListDocument;
+import org.ddialliance.ddieditor.model.lightxmlobject.LightXmlObjectListType;
+import org.ddialliance.ddieditor.model.lightxmlobject.LightXmlObjectType;
 import org.ddialliance.ddieditor.ui.model.ElementType;
 import org.ddialliance.ddiftp.util.DDIFtpException;
 import org.opendatafoundation.data.FileFormatInfo;
@@ -131,6 +136,8 @@ public class SPSSFile extends RandomAccessFile {
 
 	private static IdentificationGenerator idGenerator = IdentificationManager
 			.getInstance().getIdentificationGenerator();
+
+	public LightXmlObjectType reuseLogicalProductLightXmlObject = null;
 
 	/**
 	 * Constructor
@@ -257,7 +264,7 @@ public class SPSSFile extends RandomAccessFile {
 		// HEADER
 		log(infoRecord.toString());
 		// VARIABLES
-		Iterator varIterator = variableMap.keySet().iterator();
+		Iterator<Integer> varIterator = variableMap.keySet().iterator();
 		while (varIterator.hasNext()) {
 			SPSSVariable var = variableMap.get(varIterator.next());
 			log(var.variableRecord.toString());
@@ -311,7 +318,7 @@ public class SPSSFile extends RandomAccessFile {
 					&& (dataFormat.asciiFormat == FileFormatInfo.ASCIIFormat.DELIMITED || dataFormat.asciiFormat == FileFormatInfo.ASCIIFormat.CSV)
 					&& dataFormat.namesOnFirstLine) {
 				String recordStr = "";
-				Iterator varIterator = variableMap.keySet().iterator();
+				Iterator<Integer> varIterator = variableMap.keySet().iterator();
 				boolean isLongStringVar = false;
 				int n = 1;
 				while (varIterator.hasNext()) {
@@ -679,12 +686,55 @@ public class SPSSFile extends RandomAccessFile {
 			doc = domBuilder.newDocument();
 
 			// Logical Product
-			Element logicalProduct = (Element) doc.appendChild(doc
-					.createElementNS(DDI3_LOGICAL_PRODUCT_NAMESPACE,
-							"LogicalProduct"));
+			Element logicalProduct = null;
+			// lookup
+			try {
+				LightXmlObjectListType listType = DdiManager.getInstance()
+						.getLogicalProductsLight(null, null, null, null)
+						.getLightXmlObjectList();
+				if (!listType.getLightXmlObjectList().isEmpty()) {
+					reuseLogicalProductLightXmlObject = listType
+							.getLightXmlObjectList().get(0);
+					LogicalProductDocument logicalProductDoc = DdiManager
+							.getInstance().getLogicalProduct(
+									reuseLogicalProductLightXmlObject.getId(),
+									reuseLogicalProductLightXmlObject
+											.getVersion(),
+									reuseLogicalProductLightXmlObject
+											.getParentId(),
+									reuseLogicalProductLightXmlObject
+											.getParentVersion());
+					logicalProduct = (Element) doc.appendChild(doc
+							.createElementNS(DDI3_LOGICAL_PRODUCT_NAMESPACE,
+									"LogicalProduct"));
+					logicalProduct.setNodeValue(logicalProductDoc
+							.xmlText(DdiManager.getInstance().getXmlOptions()));
 
-			Utils.setDDIMaintainableId(logicalProduct,
-					getDDI3DefaultLogicalProductID());
+					// attr id-version-agency
+					logicalProduct.setAttribute("id", logicalProductDoc
+							.getLogicalProduct().getId());
+					logicalProduct.setAttribute("version", logicalProductDoc
+							.getLogicalProduct().getVersion());
+					logicalProduct.setAttribute("agency", logicalProductDoc
+							.getLogicalProduct().getAgency());
+					// attr version date
+					if (logicalProductDoc.getLogicalProduct().getVersionDate() != null) {
+						logicalProduct.setAttribute("versionDate",
+								logicalProductDoc.getLogicalProduct()
+										.getVersionDate().toString());
+					}
+				}
+			} catch (Exception e) {
+				throw new DDIFtpException(e);
+			}
+
+			// create
+			if (logicalProduct == null) {
+				logicalProduct = (Element) doc.appendChild(doc.createElementNS(
+						DDI3_LOGICAL_PRODUCT_NAMESPACE, "LogicalProduct"));
+				Utils.setDDIMaintainableId(logicalProduct,
+						getDDI3DefaultLogicalProductID());
+			}
 
 			// Create a DataRelationship with a logical record containing all
 			// variables
@@ -715,13 +765,13 @@ public class SPSSFile extends RandomAccessFile {
 			elem = (Element) variableSchemeReference.appendChild(doc
 					.createElementNS(SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
 			elem.setTextContent(this.getDDI3DefaultVariableSchemeID());
-
+			Utils.addVersionAndAgency(variableSchemeReference, doc);
 			//
 			// starts var iterator
 			//
 
 			// Create category schemes (one per variable with label set)
-			Iterator varIterator = variableMap.keySet().iterator();
+			Iterator<Integer> varIterator = variableMap.keySet().iterator();
 			if (exportOptions.createCategories) {
 				while (varIterator.hasNext()) {
 					SPSSVariable var = variableMap.get(varIterator.next());
@@ -763,14 +813,10 @@ public class SPSSFile extends RandomAccessFile {
 				SPSSVariable var = variableMap.get(varIterator.next());
 
 				boolean checkForLongString = checkForLongString(var);
-				boolean found = false;
 				if (checkForLongString) {
 					// reset length to max
 					NodeList nodeList = varScheme.getChildNodes();
 					for (int i = 0; i < nodeList.getLength(); i++) {
-						// if (found) {
-						// break;
-						// }
 						Node node = nodeList.item(i);
 
 						// locate right variable
@@ -781,12 +827,14 @@ public class SPSSFile extends RandomAccessFile {
 									.getNodeValue();
 							for (Entry<String, String> entry : longStringRecordMap
 									.entrySet()) {
-								System.out.println(varName + " -- "
-										+ entry.getKey());
+								// System.out.println(varName + " -- "
+								// + entry.getKey());
+
 								// Vxx equals Vxx
 								if (varName.equals(entry.getKey())) {
-									System.out
-											.println("selected -- " + varName);
+									// System.out
+									// .println("selected -- " + varName);
+
 									// navigate to representation
 									for (Node childNode = node.getFirstChild(); childNode != null;) {
 										Node nextChild = childNode
@@ -813,16 +861,12 @@ public class SPSSFile extends RandomAccessFile {
 															.getNamedItem(
 																	"maxLength")
 															.setNodeValue(value);
-													found = true;
 												}
 											}
 										}
 										childNode = nextChild;
 									}
 								}
-								// if (found) {
-								// break;
-								// }
 							}
 						}
 					}
@@ -842,6 +886,17 @@ public class SPSSFile extends RandomAccessFile {
 					+ e.getMessage());
 		}
 		return (doc);
+	}
+
+	private Element lookupLogicalProduct() throws Exception {
+		LightXmlObjectListType listType = DdiManager.getInstance()
+				.getLogicalProductsLight(null, null, null, null)
+				.getLightXmlObjectList();
+		if (!listType.getLightXmlObjectList().isEmpty()) {
+			return (Element) (listType.getLightXmlObjectList().get(0)
+					.getDomNode());
+		}
+		return null;
 	}
 
 	private boolean checkForLongString(SPSSVariable var) {
@@ -945,7 +1000,6 @@ public class SPSSFile extends RandomAccessFile {
 		DocumentBuilder domBuilder;
 		Document doc;
 		Element elem;
-		Element identifier;
 
 		try {
 			domFactory.setNamespaceAware(true);
@@ -986,6 +1040,7 @@ public class SPSSFile extends RandomAccessFile {
 			if (logicalProductID == null)
 				logicalProductID = getDDI3DefaultLogicalProductID();
 			elem.setTextContent(logicalProductID);
+			Utils.addVersionAndAgency(logicalReference, doc);
 
 			// format
 			elem = (Element) physicalStructure.appendChild(doc.createElementNS(
@@ -1079,6 +1134,7 @@ public class SPSSFile extends RandomAccessFile {
 			elem = (Element) physicalStructureReference.appendChild(doc
 					.createElementNS(SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
 			elem.setTextContent(phdpId);
+			Utils.addVersionAndAgency(physicalStructureReference, doc);
 
 			// physical record segment used
 			elem = (Element) physicalStructureReference.appendChild(doc
@@ -1111,9 +1167,10 @@ public class SPSSFile extends RandomAccessFile {
 						.appendChild(doc.createElementNS(
 								SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
 				elem.setTextContent(getDDI3DefaultVariableSchemeID());
+				Utils.addVersionAndAgency(defaultVariableSchemeReference, doc);
 
 				// Data Items
-				Iterator varIterator = variableMap.keySet().iterator();
+				Iterator<Integer> varIterator = variableMap.keySet().iterator();
 				int offset = 1;
 				while (varIterator.hasNext()) {
 					SPSSVariable var = variableMap.get(varIterator.next());
@@ -1161,6 +1218,7 @@ public class SPSSFile extends RandomAccessFile {
 						.appendChild(doc.createElementNS(
 								SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
 				elem.setTextContent(getDDI3DefaultVariableSchemeID());
+				Utils.addVersionAndAgency(defaultVariableSchemeReference, doc);
 
 				// ProprietaryInfo
 				Element proprietaryInfo = (Element) recordLayout
@@ -1237,7 +1295,7 @@ public class SPSSFile extends RandomAccessFile {
 				}
 
 				// Data Items
-				Iterator varIterator = variableMap.keySet().iterator();
+				Iterator<Integer> varIterator = variableMap.keySet().iterator();
 				while (varIterator.hasNext()) {
 					SPSSVariable var = variableMap.get(varIterator.next());
 					recordLayout.appendChild(var
@@ -1253,7 +1311,7 @@ public class SPSSFile extends RandomAccessFile {
 
 	/**
 	 * Creates a DDI 3.1 PhysicalInstance XML Document for this file based on
-	 * the specified file format using default indentifiers.
+	 * the specified file format using default identifiers.
 	 * 
 	 * @param uri
 	 * @param dataFormat
@@ -1367,6 +1425,7 @@ public class SPSSFile extends RandomAccessFile {
 			elem = (Element) recordLayoutReference.appendChild(doc
 					.createElementNS(SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
 			elem.setTextContent(getRecordLayoutId());
+			Utils.addVersionAndAgency(recordLayoutReference, doc);
 
 			// data file identification
 			Element dataFileIdentification = (Element) physicalInstance
@@ -1449,7 +1508,7 @@ public class SPSSFile extends RandomAccessFile {
 			throw new SPSSFileException("Invalid record number [" + obsNumber
 					+ ". Range is 1 to " + this.getRecordCount() + "]");
 		} else {
-			Iterator varIterator = variableMap.keySet().iterator();
+			Iterator<Integer> varIterator = variableMap.keySet().iterator();
 			int n = 1;
 			while (varIterator.hasNext()) {
 				// prefix
@@ -1470,7 +1529,7 @@ public class SPSSFile extends RandomAccessFile {
 
 	/**
 	 * Gets a data record in the specified format. If rewind is false, this
-	 * assumes the file pointer is ta the correct location
+	 * assumes the file pointer is the correct location
 	 * 
 	 * @param dataFormat
 	 * @param rewind
@@ -1501,7 +1560,7 @@ public class SPSSFile extends RandomAccessFile {
 		data.read(this, true);
 
 		// read variables
-		Iterator varIterator = variableMap.keySet().iterator();
+		Iterator<Integer> varIterator = variableMap.keySet().iterator();
 		int n = 1;
 		boolean isLongStringVar = false;
 		while (varIterator.hasNext()) {
@@ -1513,7 +1572,7 @@ public class SPSSFile extends RandomAccessFile {
 				// fix B
 				if (var.variableRecord != null
 						&& longStringRecordLabelMap
-								.get(var.variableRecord.label) != null) {				
+								.get(var.variableRecord.label) != null) {
 					String orgarName = longStringRecordLabelMap
 							.get(var.variableRecord.label);
 					if (!orgarName.equals(var.variableName)) {
@@ -1544,18 +1603,6 @@ public class SPSSFile extends RandomAccessFile {
 	public int getRecordCount() {
 		return (this.infoRecord.numberOfCases);
 	}
-
-	/**
-	 * Gets the unique identifier for this file. If this value is not set, a
-	 * unique string will be generated using java.util.UUID.randomUUID()
-	 * 
-	 * @return a String holding the identifier
-	 */
-	// public String getUniqueID() {
-	// if (this.uniqueID == null)
-	// this.uniqueID = "ID_" + java.util.UUID.randomUUID().toString();
-	// return (this.uniqueID);
-	// }
 
 	/**
 	 * Gets a SPSSVariable based on its 0-based file index position.
@@ -1718,7 +1765,7 @@ public class SPSSFile extends RandomAccessFile {
 		}
 
 		// log
-		log("\n# VARIABLES: " + variableMap.size());
+		// log("\n# VARIABLES: " + variableMap.size());
 		// Iterator varIterator = variableMap.keySet().iterator();
 		// while (varIterator.hasNext()) {
 		// SPSSVariable var = variableMap.get(varIterator.next());
@@ -1755,12 +1802,11 @@ public class SPSSFile extends RandomAccessFile {
 																// 1-based
 					var.valueLabelRecord = record3;
 					// add each category to the variable list
-					Iterator catIterator = record3.valueLabel.keySet()
+					Iterator<byte[]> catIterator = record3.valueLabel.keySet()
 							.iterator();
 					while (catIterator.hasNext()) {
 						byte[] key = (byte[]) catIterator.next();
-						SPSSVariableCategory cat = var.addCategory(false, key,
-								record3.valueLabel.get(key));
+						var.addCategory(false, key, record3.valueLabel.get(key));
 					}
 				}
 				break;
@@ -1812,11 +1858,11 @@ public class SPSSFile extends RandomAccessFile {
 					longVariableNamesRecord.read(this);
 					log(longVariableNamesRecord.toString());
 					// update variables
-					Iterator it = longVariableNamesRecord.nameMap.entrySet()
-							.iterator();
+					Iterator<Entry<String, String>> it = longVariableNamesRecord.nameMap
+							.entrySet().iterator();
 					varIndex = 0;
 					while (it.hasNext()) {
-						Map.Entry entry = (Map.Entry) it.next();
+						Entry<String, String> entry = it.next();
 						SPSSVariable var = getVariable(varIndex);
 						// make sure the short name matches and that it's not a
 						// string continuation

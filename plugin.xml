@@ -17,7 +17,7 @@
                commandId="dk.dda.ddieditor.spss.command.ImportSpss"
                icon="icons/Document.png"
                id="import-study-level-info"
-               label="SPSS file"
+               label="SPSS File"
                style="push">
          </command>
       </menuContribution>

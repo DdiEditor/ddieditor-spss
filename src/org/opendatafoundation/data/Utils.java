@@ -45,6 +45,7 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.ddialliance.ddi3.xml.xmlbeans.reusable.ReferenceType;
+import org.ddialliance.ddieditor.util.DdiEditorConfig;
 import org.ddialliance.ddiftp.util.xml.XmlBeansUtil;
 import org.opendatafoundation.data.spss.SPSSFile;
 import org.w3c.dom.Document;
@@ -225,6 +226,7 @@ public class Utils {
 	public static void setDDIMaintainableId(Element e, String id) {
 		e.setAttribute("id", id);
 		e.setAttribute("version", "1.0.0");
+		e.setAttribute("agency", getAgency());
 	}
 
 	/**
@@ -257,15 +259,39 @@ public class Utils {
 
 	/**
 	 * Set reference
-	 * @param doc of type refrence type to set reference on
-	 * @param ref reference to set
+	 * 
+	 * @param doc
+	 *            of type reference type to set reference on
+	 * @param ref
+	 *            reference to set
 	 */
-	public static void setReference(Element elem, ReferenceType ref, Document doc) {
+	public static void setReference(Element elem, ReferenceType ref,
+			Document doc) {
 		String id = XmlBeansUtil.getTextOnMixedElement(ref.getIDList().get(0));
-		
-		Element idElem = (Element) elem
-		.appendChild(doc.createElementNS(
+
+		Element idElem = (Element) elem.appendChild(doc.createElementNS(
 				SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
 		idElem.setTextContent(id);
+		addVersionAndAgency(elem, doc);
+	}
+
+	public static void addVersionAndAgency(Element reference, Document doc) {
+		// agency
+		Element elem = (Element) reference.appendChild(doc.createElementNS(
+				SPSSFile.DDI3_REUSABLE_NAMESPACE, "IdentifyingAgency"));
+		elem.setTextContent(getAgency());
+		// version
+		elem = (Element) reference.appendChild(doc.createElementNS(
+				SPSSFile.DDI3_REUSABLE_NAMESPACE, "Version"));
+		elem.setTextContent("1.0.0");
+	}
+
+	static String agency;
+
+	static String getAgency() {
+		if (agency == null) {
+			agency = DdiEditorConfig.get(DdiEditorConfig.DDI_AGENCY);
+		}
+		return agency;
 	}
 }

@@ -92,7 +92,7 @@ public abstract class SPSSVariable {
 	 * numeric variables
 	 */
 	public Map<String, SPSSVariableCategory> misCategoryMap = new LinkedHashMap<String, SPSSVariableCategory>();
-	// all categories incl. missing:
+	// all categories incl missing:
 	public Map<String, SPSSVariableCategory> categoryMap = new LinkedHashMap<String, SPSSVariableCategory>();
 	// only missing categories:
 	public Map<String, SPSSVariableCategory> missingCategoryMap = new LinkedHashMap<String, SPSSVariableCategory>();
@@ -113,8 +113,8 @@ public abstract class SPSSVariable {
 	Map<String, String> categorySchemeLabelMap = new HashMap<String, String>();
 
 	/**
-	 * Map<ddi3 id for category scheme, ',' seperated string of ddi3 id for
-	 * categores in category scheme>
+	 * Map<ddi3 id for category scheme, ',' separated string of ddi3 id for
+	 * categories in category scheme>
 	 */
 	Map<String, String> categoryIdMap = new HashMap<String, String>();
 
@@ -172,7 +172,7 @@ public abstract class SPSSVariable {
 	 *            the document wrapping this element
 	 * @param offset
 	 *            the variable offset for starting position in the file
-	 * @return the genarated Element
+	 * @return the generated Element
 	 * @throws SPSSFileException
 	 */
 	public Element getDDI2(Document doc, int offset) throws SPSSFileException {
@@ -237,7 +237,7 @@ public abstract class SPSSVariable {
 		// categories
 		if (!this.categoryMap.isEmpty()) {
 			// iterate over categories
-			Iterator catIterator = categoryMap.keySet().iterator();
+			Iterator<String> catIterator = categoryMap.keySet().iterator();
 			while (catIterator.hasNext()) {
 				String key = (String) catIterator.next();
 				SPSSVariableCategory cat = categoryMap.get(key);
@@ -342,7 +342,7 @@ public abstract class SPSSVariable {
 			int categoryNumber = 0;
 			// Iterator catIterator =
 			// valueLabelRecord.valueLabel.keySet().iterator();
-			Iterator catIterator = categoryMap.keySet().iterator();
+			Iterator<String> catIterator = categoryMap.keySet().iterator();
 
 			StringBuilder schemeLabelStrB = new StringBuilder();
 			StringBuilder categoryIds = new StringBuilder();
@@ -487,16 +487,17 @@ public abstract class SPSSVariable {
 						.appendChild(doc.createElementNS(
 								SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
 				elem.setTextContent(categorySchemeID);
+				Utils.addVersionAndAgency(categorySchemeReference, doc);
 
 				// category refs
 				String[] categoryIds = categoryIdMap.get(categorySchemeID)
 						.split(",");
 
 				// iterate over categories
-				Iterator catIterator = categoryMap.keySet().iterator();
+				Iterator<String> catIterator = categoryMap.keySet().iterator();
 				int categoryNumber = 0;
 				while (catIterator.hasNext()) {
-					String key = (String) catIterator.next();
+					String key = catIterator.next();
 					SPSSVariableCategory cat = categoryMap.get(key);
 
 					// Code element
@@ -514,6 +515,7 @@ public abstract class SPSSVariable {
 							.createElementNS(SPSSFile.DDI3_REUSABLE_NAMESPACE,
 									"ID"));
 					elem.setTextContent(categoryIds[categoryNumber]);
+					Utils.addVersionAndAgency(categoryReference, doc);
 					categoryNumber++;
 
 					// value
@@ -532,7 +534,7 @@ public abstract class SPSSVariable {
 				}
 			} else {
 				// iterate over categories - but do not store category reference
-				Iterator catIterator = categoryMap.keySet().iterator();
+				Iterator<String> catIterator = categoryMap.keySet().iterator();
 				while (catIterator.hasNext()) {
 					String key = (String) catIterator.next();
 					SPSSVariableCategory cat = categoryMap.get(key);
@@ -581,6 +583,7 @@ public abstract class SPSSVariable {
 		elem = (Element) varReference.appendChild(doc.createElementNS(
 				SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
 		elem.setTextContent(variableIdMap.get(this.variableNumber));
+		Utils.addVersionAndAgency(varReference, doc);
 
 		// physical location
 		Element physicalLocation = (Element) dataItem.appendChild(doc
@@ -629,6 +632,7 @@ public abstract class SPSSVariable {
 		elem = (Element) varReference.appendChild(doc.createElementNS(
 				SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
 		elem.setTextContent(variableIdMap.get(this.variableNumber));
+		Utils.addVersionAndAgency(varReference, doc);
 
 		elem = (Element) dataItem.appendChild(doc.createElementNS(
 				SPSSFile.DDI3_PROPRIETARY_RECORD_NAMESPACE,
@@ -768,6 +772,7 @@ public abstract class SPSSVariable {
 						.appendChild(doc.createElementNS(
 								SPSSFile.DDI3_REUSABLE_NAMESPACE,
 								"CodeSchemeReference"));
+				// id
 				elem = (Element) codeSchemeReference
 						.appendChild(doc.createElementNS(
 								SPSSFile.DDI3_REUSABLE_NAMESPACE, "ID"));
@@ -775,6 +780,9 @@ public abstract class SPSSVariable {
 					codeSchemeReferenceID = codeSchemeIdMap
 							.get(this.variableNumber);
 				elem.setTextContent(codeSchemeReferenceID);
+
+				// version agency
+				Utils.addVersionAndAgency(codeSchemeReference, doc);
 			} else {
 				String dataType = getDDI3DataType();
 				if (getDDI3RepresentationType() == DDI3RepresentationType.NUMERIC) {
@@ -825,16 +833,16 @@ public abstract class SPSSVariable {
 		if (measureEnum == null) {
 			measureEnum = SPSSMeasure.ORDINAL;
 		}
-		elem.setAttribute("classificationLevel", measureEnum.classificationLevel());
+		elem.setAttribute("classificationLevel",
+				measureEnum.classificationLevel());
 	}
-	
+
 	private void setMissingValue(Element elem) {
 		// - missing values
-		Iterator catIterator = missingCategoryMap.keySet()
-				.iterator();
+		Iterator<String> catIterator = missingCategoryMap.keySet().iterator();
 		StringBuilder missing = new StringBuilder();
 		while (catIterator.hasNext()) {
-			String key = (String) catIterator.next();
+			String key = catIterator.next();
 			SPSSVariableCategory cat = missingCategoryMap.get(key);
 			missing.append(cat.strValue);
 			if (catIterator.hasNext()) {
@@ -843,7 +851,7 @@ public abstract class SPSSVariable {
 		}
 		if (missing.length() > 0) {
 			elem.setAttribute("missingValue", missing.toString());
-		}	
+		}
 	}
 
 	/**
