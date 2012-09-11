@@ -2,6 +2,7 @@ package dk.dda.ddieditor.spss.command;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.List;
 
@@ -23,14 +24,15 @@ import org.ddialliance.ddiftp.util.log.LogFactory;
 import org.ddialliance.ddiftp.util.log.LogType;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.swt.custom.BusyIndicator;
 import org.eclipse.ui.PlatformUI;
 import org.opendatafoundation.data.FileFormatInfo;
 import org.opendatafoundation.data.FileFormatInfo.ASCIIFormat;
-import org.opendatafoundation.data.FileFormatInfo.Format;
 import org.opendatafoundation.data.Utils;
 import org.opendatafoundation.data.spss.ExportOptions;
 import org.opendatafoundation.data.spss.SPSSFile;
@@ -40,7 +42,7 @@ import dk.dda.ddieditor.spss.osgi.Activator;
 import dk.dda.ddieditor.spss.wizard.ImportSpssWizard;
 
 /*
- * Copyright 2011 Danish Data Archive (http://www.dda.dk) 
+ * Copyright 2012 Danish Data Archive (http://www.dda.dk) 
  * 
  * This program is free software; you can redistribute it and/or modify it 
  * under the terms of the GNU Lesser General Public License as published by
@@ -73,10 +75,26 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 		int returnCode = dialog.open();
 		if (returnCode != Window.CANCEL) {
 			// import
-			SpssImportRunnable longJob = new SpssImportRunnable(
+			final SpssImportRunnable longJob = new SpssImportRunnable(
 					importSpssWizard);
-			BusyIndicator.showWhile(PlatformUI.getWorkbench().getDisplay(),
-					longJob);
+			try {
+				PlatformUI.getWorkbench().getProgressService()
+						.busyCursorWhile(new IRunnableWithProgress() {
+							@Override
+							public void run(IProgressMonitor monitor)
+									throws InvocationTargetException,
+									InterruptedException {
+								monitor.beginTask(Translator
+										.trans("spss.importwizard.title"), 1);
+								PlatformUI.getWorkbench().getDisplay()
+										.asyncExec(longJob);
+								monitor.worked(1);
+							}
+						});
+			} catch (Exception e) {
+				throw new ExecutionException(
+						Translator.trans("spss.errortitle"), e.getCause());
+			}
 
 			// refresh
 			ViewManager.getInstance().addViewsToRefresh(
@@ -109,7 +127,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 				// study unit
 				//
 				LightXmlObjectType studyUnitLight = null;
-				
+
 				// check for study unit
 				List<LightXmlObjectType> studList = DdiManager.getInstance()
 						.checkForParent(
@@ -190,15 +208,21 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 					}
 					dom = null;
 				}
+
+				// file format
+				FileFormatInfo fileFormatInfo = new FileFormatInfo();
+				fileFormatInfo.format = FileFormatInfo.Format.ASCII;
+				fileFormatInfo.asciiFormat = FileFormatInfo.ASCIIFormat.CSV;
+		
 				//
 				// physical data product
 				//
 				if (importSpssWizard.variableRec) {
 					if (!spssFile.isMetadataLoaded) {
 						spssFile.loadMetadata();
-						// TODO add varirefs
 					}
 
+					// logical product id
 					logicalProductID = spssFile.getLogicalProductDdi3Id();
 					if (logicalProductID == null) {
 						// parent list
@@ -228,24 +252,18 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 						}
 					}
 
-					// ascii only
-					Format[] format = new Format[] {
-					// FileFormatInfo.Format.SPSS,
-					FileFormatInfo.Format.ASCII };
-					for (int i = 0; i < format.length; i++) {
-						dom = spssFile
-								.getDDI3PhysicalDataProduct(new FileFormatInfo(
-										format[i]), logicalProductID);
+					// create physical data product
+					dom = spssFile.getDDI3PhysicalDataProduct(fileFormatInfo,
+							logicalProductID);
 
-						DdiManager.getInstance().createElement(
-								dom.getDocumentElement().getLocalName(),
-								Utils.nodeToString(dom).toString(),
-								studyUnitLight.getId(),
-								studyUnitLight.getVersion(),
-								studyUnitLight.getElement(),
-								new String[] { "LogicalProduct" },
-								new String[] {}, new String[] {});
-					}
+					DdiManager.getInstance().createElement(
+							dom.getDocumentElement().getLocalName(),
+							Utils.nodeToString(dom).toString(),
+							studyUnitLight.getId(),
+							studyUnitLight.getVersion(),
+							studyUnitLight.getElement(),
+							new String[] { "LogicalProduct" }, new String[] {},
+							new String[] {});
 				}
 
 				//
@@ -260,10 +278,8 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 					}
 
 					// create dat file - dat file location
-					String fileName = studyUnitLight.getId() + ".dat";
-					FileFormatInfo fileFormatInfo = new FileFormatInfo();
-					fileFormatInfo.format = FileFormatInfo.Format.ASCII;
-					fileFormatInfo.asciiFormat = ASCIIFormat.DELIMITED;
+					String fileName = studyUnitLight.getId() + ".csv";
+
 					spssFile.exportData(new File(importSpssWizard.dataFile
 							+ "/" + fileName), fileFormatInfo);
 

@@ -58,7 +58,6 @@ import org.ddialliance.ddi3.xml.xmlbeans.reusable.ReferenceType;
 import org.ddialliance.ddieditor.logic.identification.IdentificationGenerator;
 import org.ddialliance.ddieditor.logic.identification.IdentificationManager;
 import org.ddialliance.ddieditor.model.DdiManager;
-import org.ddialliance.ddieditor.model.lightxmlobject.LightXmlObjectListDocument;
 import org.ddialliance.ddieditor.model.lightxmlobject.LightXmlObjectListType;
 import org.ddialliance.ddieditor.model.lightxmlobject.LightXmlObjectType;
 import org.ddialliance.ddieditor.ui.model.ElementType;
@@ -336,15 +335,19 @@ public class SPSSFile extends RandomAccessFile {
 							}
 						}
 
-						if (!isLongStringVar) {
-							if (dataFormat.asciiFormat == FileFormatInfo.ASCIIFormat.CSV)
-								recordStr += ",";
-							else
-								recordStr += dataFormat.asciiDelimiter;
+						if (!isLongStringVar) {							
 							recordStr += var.getName();
-						} else {
-							System.out.println(var.variableName);
-						}
+							
+							if (varIterator.hasNext()) {
+								if (dataFormat.asciiFormat == FileFormatInfo.ASCIIFormat.CSV)
+									recordStr += ",";
+								else
+									recordStr += dataFormat.asciiDelimiter;	
+							}
+						} 
+						// else {
+						// System.out.println(var.variableName);
+						// }
 					}
 					n++;
 				}
@@ -830,7 +833,8 @@ public class SPSSFile extends RandomAccessFile {
 								// System.out.println(varName + " -- "
 								// + entry.getKey());
 
-								// Vxx equals Vxx
+								// reannotate variable length on long string
+								// variables
 								if (varName.equals(entry.getKey())) {
 									// System.out
 									// .println("selected -- " + varName);
@@ -1174,12 +1178,17 @@ public class SPSSFile extends RandomAccessFile {
 				int offset = 1;
 				while (varIterator.hasNext()) {
 					SPSSVariable var = variableMap.get(varIterator.next());
-					recordLayout.appendChild(var.getDDI3DataItem(doc,
-							dataFormat, offset));
+					Element dataItem = var.getDDI3DataItem(doc, dataFormat,
+							offset, longStringRecordMap);
+
+					// escape long string data items
+					if (dataItem != null) {
+						recordLayout.appendChild(dataItem);
+						offset++;
+					}
+
 					if (dataFormat.asciiFormat == FileFormatInfo.ASCIIFormat.FIXED)
 						offset += var.getLength(dataFormat);
-					else
-						offset++;
 				}
 			} else {
 				// SPSS Proprietary Format

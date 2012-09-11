@@ -567,7 +567,13 @@ public abstract class SPSSVariable {
 	 * @throws DDIFtpException
 	 */
 	public Element getDDI3DataItem(Document doc, FileFormatInfo dataFormat,
-			int offset) throws DOMException, SPSSFileException {
+			int offset, Map<String, String> longStringRecordLabelMap)
+			throws DOMException, SPSSFileException {
+		// escape long string data items
+		if (variableIdMap.get(this.variableNumber) == null) {
+			return null;
+		}
+
 		Element dataItem;
 		Element elem;
 
@@ -589,23 +595,46 @@ public abstract class SPSSVariable {
 		Element physicalLocation = (Element) dataItem.appendChild(doc
 				.createElementNS(SPSSFile.DDI3_PHYSICAL_PRODUCT_NAMESPACE,
 						"PhysicalLocation"));
+
+		// storage format
 		elem = (Element) physicalLocation.appendChild(doc.createElementNS(
 				SPSSFile.DDI3_PHYSICAL_PRODUCT_NAMESPACE, "StorageFormat"));
 		elem.setTextContent(this.getSPSSFormat());
 
-		elem = (Element) physicalLocation.appendChild(doc.createElementNS(
-				SPSSFile.DDI3_PHYSICAL_PRODUCT_NAMESPACE, "StartPosition"));
-		elem.setTextContent("" + offset);
+		// delimited or csv file type
+		if (dataFormat.asciiFormat.equals(FileFormatInfo.ASCIIFormat.DELIMITED)
+				|| dataFormat.asciiFormat
+						.equals(FileFormatInfo.ASCIIFormat.CSV)) {
+			// array position
+			elem = (Element) physicalLocation.appendChild(doc.createElementNS(
+					SPSSFile.DDI3_PHYSICAL_PRODUCT_NAMESPACE, "ArrayPosition"));
+			elem.setTextContent("" + offset);
+		}
+
+		// fixed file type
+		if (dataFormat.asciiFormat.equals(FileFormatInfo.ASCIIFormat.FIXED)) {
+			// start position
+			elem = (Element) physicalLocation.appendChild(doc.createElementNS(
+					SPSSFile.DDI3_PHYSICAL_PRODUCT_NAMESPACE, "StartPosition"));
+			elem.setTextContent("" + offset);
+		}
+
+		// width
 		elem = (Element) physicalLocation.appendChild(doc.createElementNS(
 				SPSSFile.DDI3_PHYSICAL_PRODUCT_NAMESPACE, "Width"));
-		elem.setTextContent("" + getLength(dataFormat));
+		if (longStringRecordLabelMap.get(getShortName()) != null) {
+			elem.setTextContent(longStringRecordLabelMap.get(getShortName()));
+		} else {
+			elem.setTextContent("" + getLength(dataFormat));
+		}
+
+		// decimals
 		if (this.getDecimals() > 0) {
 			elem = (Element) physicalLocation.appendChild(doc.createElementNS(
 					SPSSFile.DDI3_PHYSICAL_PRODUCT_NAMESPACE,
 					"DecimalPositions"));
 			elem.setTextContent("" + this.getDecimals());
 		}
-
 		return (dataItem);
 	}
 

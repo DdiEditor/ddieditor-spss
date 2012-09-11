@@ -146,7 +146,11 @@ public class SPSSNumericVariable extends SPSSVariable {
 			formatStr = "Dollar" + getLength() + "." + getDecimals();
 			break;
 		case 5: // fixed format (default)
-			formatStr = "integer";
+			if (getDecimals()>0) {
+				formatStr = "real";
+			} else {
+				formatStr = "integer";
+			}
 			// spss format
 			// formatStr = "F" + width + "." + getDecimals();
 			break;

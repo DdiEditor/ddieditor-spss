@@ -8,6 +8,11 @@
             id="dk.dda.ddieditor.spss.command.ImportSpss"
             name="Import SPSS">
       </command>
+      <command
+            defaultHandler="dk.dda.ddieditor.spss.command.ExportSpss"
+            id="dk.dda.ddieditor.spss.command.ExportSpss"
+            name="Export SPSS">
+      </command>
    </extension>
    <extension
          point="org.eclipse.ui.menus">
@@ -18,6 +23,17 @@
                icon="icons/Document.png"
                id="import-study-level-info"
                label="SPSS File"
+               style="push">
+         </command>
+      </menuContribution>
+      <menuContribution
+            allPopups="false"
+            locationURI="menu:filemenu-exportmenu?after=ddi-export">
+         <command
+               commandId="dk.dda.ddieditor.spss.command.ExportSpss"
+               icon="icons/Document.png"
+               id="export-spss"
+               label="SPSS syntax"
                style="push">
          </command>
       </menuContribution>
