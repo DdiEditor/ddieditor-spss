@@ -29,10 +29,8 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
-import org.eclipse.swt.custom.BusyIndicator;
 import org.eclipse.ui.PlatformUI;
 import org.opendatafoundation.data.FileFormatInfo;
-import org.opendatafoundation.data.FileFormatInfo.ASCIIFormat;
 import org.opendatafoundation.data.Utils;
 import org.opendatafoundation.data.spss.ExportOptions;
 import org.opendatafoundation.data.spss.SPSSFile;
@@ -213,7 +211,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 				FileFormatInfo fileFormatInfo = new FileFormatInfo();
 				fileFormatInfo.format = FileFormatInfo.Format.ASCII;
 				fileFormatInfo.asciiFormat = FileFormatInfo.ASCIIFormat.CSV;
-		
+
 				//
 				// physical data product
 				//
@@ -318,7 +316,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 					XmlObject[] archs = new XmlObject[archList.size()];
 					int count = 0;
 					for (LightXmlObjectType archLight : archList) {
-						archs[count] = DdiManager.getInstance().getAchive(
+						archs[count] = DdiManager.getInstance().getArchive(
 								archLight.getId(), archLight.getVersion(),
 								archLight.getParentId(),
 								archLight.getParentVersion());
