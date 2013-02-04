@@ -32,25 +32,25 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PlatformUI;
 
 /*
-* Copyright 2011 Danish Data Archive (http://www.dda.dk) 
-* 
-* This program is free software; you can redistribute it and/or modify it 
-* under the terms of the GNU Lesser General Public License as published by
-* the Free Software Foundation; either Version 3 of the License, or 
-* (at your option) any later version.
-* 
-* This program is distributed in the hope that it will be useful, 
-* but WITHOUT ANY WARRANTY; without even the implied warranty of 
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See the GNU Lesser General Public License for more details.
-*  
-* You should have received a copy of the GNU Lesser General Public 
-* License along with this library; if not, write to the 
-* Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, 
-* Boston, MA  02110-1301  USA
-* The full text of the license is also available on the Internet at 
-* http://www.gnu.org/copyleft/lesser.html
-*/
+ * Copyright 2011 Danish Data Archive (http://www.dda.dk) 
+ * 
+ * This program is free software; you can redistribute it and/or modify it 
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either Version 3 of the License, or 
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Lesser General Public License for more details.
+ *  
+ * You should have received a copy of the GNU Lesser General Public 
+ * License along with this library; if not, write to the 
+ * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Boston, MA  02110-1301  USA
+ * The full text of the license is also available on the Internet at 
+ * http://www.gnu.org/copyleft/lesser.html
+ */
 
 public class ImportSpssWizard extends Wizard {
 	private List<DDIResourceType> resources = null;
@@ -61,6 +61,8 @@ public class ImportSpssWizard extends Wizard {
 	// variable
 	public boolean variable = false;// null;
 	public boolean frequency = false;// null;
+
+	public boolean createCategories = false;
 
 	// variablerec
 	public boolean variableRec = false;
@@ -216,7 +218,7 @@ public class ImportSpssWizard extends Wizard {
 					fileChooser.setFilterExtensions(new String[] { "*.sav" });
 					fileChooser.setFilterNames(new String[] { Translator
 							.trans("spss.filechooser.filternames") });
-					
+
 					PreferenceUtil.setPathFilter(fileChooser);
 					spssFile = fileChooser.open();
 					PreferenceUtil.setLastBrowsedPath(spssFile);
@@ -230,6 +232,23 @@ public class ImportSpssWizard extends Wizard {
 					// do nothing
 				}
 			});
+
+			// create categories
+			Button createCategoriesButton = editor.createCheckBox(group, "",
+					Translator.trans("spss.ddipage.createcategories"));
+			createCategoriesButton
+					.addSelectionListener(new SelectionListener() {
+						@Override
+						public void widgetSelected(SelectionEvent e) {
+							createCategories = ((Button) e.widget)
+									.getSelection();
+						}
+
+						@Override
+						public void widgetDefaultSelected(SelectionEvent e) {
+							// do nothing
+						}
+					});
 
 			// loaded resources
 			try {
@@ -266,6 +285,7 @@ public class ImportSpssWizard extends Wizard {
 					}
 				});
 			}
+
 			// finalize
 			setControl(group);
 			setPageComplete(false);
