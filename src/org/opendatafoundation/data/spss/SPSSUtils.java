@@ -33,8 +33,7 @@ import java.nio.charset.Charset;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
+import org.ddialliance.ddieditor.util.DdiEditorConfig;
 
 /**
  * Various utility functions
@@ -67,7 +66,7 @@ public class SPSSUtils {
 	 * @return converted value as String
 	 */
 	public static String byte8ToString(byte[] buffer) {
-		String str = new String(buffer, Charset.forName("ISO-8859-1"));
+		String str = new String(buffer, Charset.forName(DdiEditorConfig.get(DdiEditorConfig.SPSS_IMPORT_CHARSET)));
 		str.replaceAll("\\s+$", "");
 		return (str);
 	}
