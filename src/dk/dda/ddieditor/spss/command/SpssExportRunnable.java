@@ -610,7 +610,8 @@ public class SpssExportRunnable implements Runnable {
 			writer.newLine();
 
 			// GET DATA
-			writer.write("SET UNICODE=ON.");
+			// TODO other encoding ?
+			writer.write("SET UNICODE ON DECIMAL COMMA OLANG=ENGLISH.");
 			writer.newLine();
 			writer.write("GET DATA");
 			writer.newLine();
@@ -619,7 +620,8 @@ public class SpssExportRunnable implements Runnable {
 			writer.write(" /FILE=\"");
 			writer.write(exportSpssWizard.exportPath);
 			writer.write(File.separator);
-			writer.write(exportSpssWizard.inDataFile);
+			File inDataFile = new File(exportSpssWizard.inDataFile);
+			writer.write(inDataFile.getName());
 			writer.write("\"");
 			writer.newLine();
 			writer.write(" /DELCASE=LINE");
@@ -673,12 +675,13 @@ public class SpssExportRunnable implements Runnable {
 			writer.flush();
 
 			// finalize
-			writer.newLine();
-			writer.newLine();
-			writer.write("SORT VARIABLES BY NAME (A).");
-			writer.newLine();
-			writer.write("EXECUTE.");
-			writer.flush();
+			// comment out 20130312
+			// writer.newLine();
+			// writer.newLine();
+			// writer.write("SORT VARIABLES BY NAME (A).");
+			// writer.newLine();
+			// writer.write("EXECUTE.");
+			// writer.flush();
 		} catch (IOException e) {
 			throw e;
 		} finally {
