@@ -66,7 +66,8 @@ public class SPSSUtils {
 	 * @return converted value as String
 	 */
 	public static String byte8ToString(byte[] buffer) {
-		String str = new String(buffer, Charset.forName(DdiEditorConfig.get(DdiEditorConfig.SPSS_IMPORT_CHARSET)));
+		String str = new String(buffer, Charset.forName(DdiEditorConfig
+				.get(DdiEditorConfig.SPSS_IMPORT_CHARSET)));
 		str.replaceAll("\\s+$", "");
 		return (str);
 	}
