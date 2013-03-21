@@ -157,6 +157,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 					spssFile.loadMetadata();
 					ExportOptions exportOptions = new ExportOptions();
 					exportOptions.createCategories = importSpssWizard.createCategories;
+					exportOptions.createMeasure = importSpssWizard.createMeasure;
 
 					dom = spssFile.getDDI3LogicalProduct(exportOptions, null,
 							DdiEditorConfig.get(DdiEditorConfig.DDI_AGENCY));
