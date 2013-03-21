@@ -335,16 +335,16 @@ public class SPSSFile extends RandomAccessFile {
 							}
 						}
 
-						if (!isLongStringVar) {							
+						if (!isLongStringVar) {
 							recordStr += var.getName();
-							
+
 							if (varIterator.hasNext()) {
 								if (dataFormat.asciiFormat == FileFormatInfo.ASCIIFormat.CSV)
 									recordStr += ",";
 								else
-									recordStr += dataFormat.asciiDelimiter;	
+									recordStr += dataFormat.asciiDelimiter;
 							}
-						} 
+						}
 						// else {
 						// System.out.println(var.variableName);
 						// }
@@ -877,7 +877,8 @@ public class SPSSFile extends RandomAccessFile {
 					continue;
 				}
 
-				Element variable = var.createDDI3Variable(doc);
+				Element variable = var.createDDI3Variable(doc,
+						exportOptions.createMeasure);
 				varScheme.appendChild(variable);
 
 				// System.out.println("name: " + var.getName());
@@ -1056,6 +1057,8 @@ public class SPSSFile extends RandomAccessFile {
 					.appendChild(doc.createElementNS(
 							DDI3_PHYSICAL_PRODUCT_NAMESPACE,
 							"DefaultDecimalSeparator"));
+
+			// TODO make this property
 			elem.setTextContent(".");
 
 			// gross record structure

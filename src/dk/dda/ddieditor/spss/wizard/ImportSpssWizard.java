@@ -63,6 +63,7 @@ public class ImportSpssWizard extends Wizard {
 	public boolean frequency = false;// null;
 
 	public boolean createCategories = false;
+	public boolean createMeasure = true;
 
 	// variablerec
 	public boolean variableRec = false;
@@ -225,6 +226,22 @@ public class ImportSpssWizard extends Wizard {
 
 					pathText.setText(spssFile);
 					pageComplete();
+				}
+
+				@Override
+				public void widgetDefaultSelected(SelectionEvent e) {
+					// do nothing
+				}
+			});
+
+			// create measure
+			Button createMeasureButton = editor.createCheckBox(group, "",
+					Translator.trans("spss.ddipage.createmeasures"));
+			createMeasureButton.setSelection(true);
+			createMeasureButton.addSelectionListener(new SelectionListener() {
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					createMeasure = ((Button) e.widget).getSelection();
 				}
 
 				@Override

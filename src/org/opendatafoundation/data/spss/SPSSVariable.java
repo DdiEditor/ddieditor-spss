@@ -733,11 +733,14 @@ public abstract class SPSSVariable {
 	 * Generates a DDI3 Variable element for this variable
 	 * 
 	 * @param doc
+	 * @param createMeasure
+	 *            create classification level
 	 * @return a org.w3c.dom.Element containing the Variable
 	 * @throws DDIFtpException
 	 */
-	public Element createDDI3Variable(Document doc) throws DDIFtpException {
-		return (createDDI3Variable(doc, null));
+	public Element createDDI3Variable(Document doc, boolean createMeasure)
+			throws DDIFtpException {
+		return createDDI3Variable(doc, null, createMeasure);
 	}
 
 	/**
@@ -745,11 +748,14 @@ public abstract class SPSSVariable {
 	 * 
 	 * @param doc
 	 * @param codeSchemeReferenceID
+	 * @param createMeasure
+	 *            create classification level
 	 * @return a org.w3c.dom.Element containing the Variable
 	 * @throws DDIFtpException
 	 */
 	private Element createDDI3Variable(Document doc,
-			String codeSchemeReferenceID) throws DDIFtpException {
+			String codeSchemeReferenceID, boolean createMeasure)
+			throws DDIFtpException {
 		Element var = null;
 		Element elem;
 
@@ -768,15 +774,9 @@ public abstract class SPSSVariable {
 		elem = (Element) var.appendChild(doc.createElementNS(
 				SPSSFile.DDI3_REUSABLE_NAMESPACE, "Label"));
 		elem.setAttribute("type", "label");
-		elem.setAttribute("maxLength", "120");
+		elem.setAttribute("maxLength", this.getLabel() != null ? ""
+				+ this.getLabel().length() : "120");
 		elem.setTextContent(this.getLabel());
-
-		// variable label (short name)
-		// elem = (Element) var.appendChild(doc.createElementNS(
-		// SPSSFile.DDI3_REUSABLE_NAMESPACE, "Label"));
-		// elem.setAttribute("type", "name");
-		// elem.setAttribute("maxLength", "8");
-		// elem.setTextContent(this.getShortName());
 
 		// representation
 		if (hasValueLabels() || getDDI3RepresentationType() != null) {
@@ -795,7 +795,9 @@ public abstract class SPSSVariable {
 						.appendChild(doc.createElementNS(
 								SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 								"CodeRepresentation"));
-				setMeasure(codeRepresentation);
+				if (createMeasure) {
+					setMeasure(codeRepresentation);
+				}
 				setMissingValue(codeRepresentation);
 				Element codeSchemeReference = (Element) codeRepresentation
 						.appendChild(doc.createElementNS(
@@ -820,7 +822,9 @@ public abstract class SPSSVariable {
 							.createElementNS(
 									SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 									"NumericRepresentation"));
-					setMeasure(elem);
+					if (createMeasure) {
+						setMeasure(elem);
+					}
 					if (dataType != null)
 						elem.setAttribute("type", dataType);
 					// - decimal position
@@ -836,7 +840,9 @@ public abstract class SPSSVariable {
 							.createElementNS(
 									SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 									"DateTimeRepresentation"));
-					setMeasure(elem);
+					if (createMeasure) {
+						setMeasure(elem);
+					}
 					if (dataType != null)
 						elem.setAttribute("type", dataType);
 					elem.setAttribute("format", this.getSPSSFormat());
@@ -848,7 +854,9 @@ public abstract class SPSSVariable {
 							.createElementNS(
 									SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 									"TextRepresentation"));
-					setMeasure(elem);
+					if (createMeasure) {
+						setMeasure(elem);
+					}
 					elem.setAttribute("maxLength", "" + this.getLength());
 					setMissingValue(elem);
 				}
