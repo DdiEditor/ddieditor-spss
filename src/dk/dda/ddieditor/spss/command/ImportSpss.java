@@ -156,8 +156,6 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 				if (importSpssWizard.variable) {
 					spssFile.loadMetadata();
 					ExportOptions exportOptions = new ExportOptions();
-					// TODO Control ExportOption.createCategories by property
-					// Get the Categories from Wiki interface
 					exportOptions.createCategories = importSpssWizard.createCategories;
 
 					dom = spssFile.getDDI3LogicalProduct(exportOptions, null,
@@ -265,7 +263,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 				}
 
 				//
-				// physical instance and dat file
+				// physical instance and csv file
 				//
 				if (importSpssWizard.variableDataFile) {
 					if (!spssFile.isMetadataLoaded) {
