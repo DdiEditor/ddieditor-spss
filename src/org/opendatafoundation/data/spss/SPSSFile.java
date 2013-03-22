@@ -1199,7 +1199,8 @@ public class SPSSFile extends RandomAccessFile {
 			}
 			elem = (Element) recordLayout.appendChild(doc.createElementNS(
 					namespace, "CharacterSet"));
-			elem.setTextContent("ASCII");
+			elem.setTextContent(DdiEditorConfig
+					.get(DdiEditorConfig.SPSS_IMPORT_CHARSET));
 			// array base
 			elem = (Element) recordLayout.appendChild(doc.createElementNS(
 					namespace, "ArrayBase"));

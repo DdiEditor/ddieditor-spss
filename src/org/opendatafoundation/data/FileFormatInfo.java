@@ -1,5 +1,7 @@
 package org.opendatafoundation.data;
 
+import org.ddialliance.ddieditor.util.DdiEditorConfig;
+
 /*
  * Author(s): Pascal Heus (pheus@opendatafoundation.org)
  *  
@@ -31,45 +33,53 @@ package org.opendatafoundation.data;
 
 /**
  * Class to describe file format options for import/export
- *  
+ * 
  * @author Pascal Heus (pheus@opendatafoundation.org)
  */
 public class FileFormatInfo {
-    /** Export compatibility mode */
-    public static enum Compatibility {NATIVE, GENERIC};
-    /** Export format */
-    public static enum Format {ASCII, SPSS, SAS, STATA};
-    /** Ascii format */
-    public static enum ASCIIFormat {FIXED,DELIMITED,CSV};
-    
-    public Compatibility compatibility    = Compatibility.NATIVE;
-    public Format        format           = Format.ASCII;
-    public ASCIIFormat   asciiFormat      = ASCIIFormat.FIXED;
-    public char          asciiDelimiter   ='\t';
-    public boolean       namesOnFirstLine = true;
-    
-    public FileFormatInfo() {
-    }
-    
-    public FileFormatInfo(Format format) {
-    	this.format = format;
-    }
-    
-    public String toString() {
-        String str;
-        str = format.name();
-        if(format==Format.ASCII) {
-            str += "_"+asciiFormat.toString();
-            /*
-            if(asciiFormat==ASCIIFormat.DELIMITED) {
-                switch(asciiDelimiter) {
-                case '\t': str += ".TAB";
-                default: str += "."+ (int) asciiDelimiter;
-                }
-            }
-            */
-            if(compatibility!=Compatibility.GENERIC) str += "_"+compatibility.toString();
-        }
-        return(str);
-    }
+	/** Export compatibility mode */
+	public static enum Compatibility {
+		NATIVE, GENERIC
+	};
+
+	/** Export format */
+	public static enum Format {
+		ASCII, SPSS, SAS, STATA
+	};
+
+	/** Ascii format */
+	public static enum ASCIIFormat {
+		FIXED, DELIMITED, CSV
+	};
+
+	public Compatibility compatibility = Compatibility.NATIVE;
+	public Format format = Format.ASCII;
+	public ASCIIFormat asciiFormat = ASCIIFormat.FIXED;
+	public char asciiDelimiter = '\t';
+	public boolean namesOnFirstLine = true;
+
+	public FileFormatInfo() {
+	}
+
+	public FileFormatInfo(Format format) {
+		this.format = format;
+	}
+
+	public String toString() {
+		String str;
+		str = format.name();
+		if (format == Format.ASCII) {
+			str = DdiEditorConfig.get(DdiEditorConfig.SPSS_IMPORT_CHARSET);
+			str += "_"
+					+ asciiFormat.toString();
+			/*
+			 * if(asciiFormat==ASCIIFormat.DELIMITED) { switch(asciiDelimiter) {
+			 * case '\t': str += ".TAB"; default: str += "."+ (int)
+			 * asciiDelimiter; } }
+			 */
+			if (compatibility != Compatibility.GENERIC)
+				str += "_" + compatibility.toString();
+		}
+		return (str);
+	}
 }
