@@ -46,6 +46,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -61,6 +62,7 @@ import org.ddialliance.ddieditor.model.DdiManager;
 import org.ddialliance.ddieditor.model.lightxmlobject.LightXmlObjectListType;
 import org.ddialliance.ddieditor.model.lightxmlobject.LightXmlObjectType;
 import org.ddialliance.ddieditor.ui.model.ElementType;
+import org.ddialliance.ddieditor.util.DdiEditorConfig;
 import org.ddialliance.ddiftp.util.DDIFtpException;
 import org.opendatafoundation.data.FileFormatInfo;
 import org.opendatafoundation.data.Utils;
@@ -114,6 +116,9 @@ public class SPSSFile extends RandomAccessFile {
 	long cacheEnd = -1;
 
 	// SPSS Metadata
+	String numericDelimiter;
+	String numericSearchDelimiter;
+	Pattern numericDelimiterPattern;
 	SPSSRecordType1 infoRecord; // < the SPSS type 1 record
 	Map<Integer, SPSSVariable> variableMap; // < list of variables (wraps a
 											// SPSSRecordType2)
@@ -143,10 +148,12 @@ public class SPSSFile extends RandomAccessFile {
 	 * 
 	 * @param file
 	 * @throws FileNotFoundException
+	 * @throws DDIFtpException
 	 */
-	public SPSSFile(File file) throws FileNotFoundException {
+	public SPSSFile(File file) throws FileNotFoundException, DDIFtpException {
 		super(file, "r");
 		this.file = file;
+		setnumericDelimiterOption();
 	}
 
 	/**
@@ -155,10 +162,13 @@ public class SPSSFile extends RandomAccessFile {
 	 * @param file
 	 * @param mode
 	 * @throws FileNotFoundException
+	 * @throws DDIFtpException
 	 */
-	public SPSSFile(File file, String mode) throws FileNotFoundException {
+	public SPSSFile(File file, String mode) throws FileNotFoundException,
+			DDIFtpException {
 		super(file, mode);
 		this.file = file;
+		setnumericDelimiterOption();
 	}
 
 	/**
@@ -166,10 +176,12 @@ public class SPSSFile extends RandomAccessFile {
 	 * 
 	 * @param name
 	 * @throws FileNotFoundException
+	 * @throws DDIFtpException
 	 */
-	public SPSSFile(String name) throws FileNotFoundException {
+	public SPSSFile(String name) throws FileNotFoundException, DDIFtpException {
 		super(name, "r");
 		this.file = new File(name);
+		setnumericDelimiterOption();
 	}
 
 	/**
@@ -178,10 +190,39 @@ public class SPSSFile extends RandomAccessFile {
 	 * @param name
 	 * @param mode
 	 * @throws FileNotFoundException
+	 * @throws DDIFtpException
 	 */
-	public SPSSFile(String name, String mode) throws FileNotFoundException {
+	public SPSSFile(String name, String mode) throws FileNotFoundException,
+			DDIFtpException {
 		super(name, "r");
 		this.file = new File(name);
+		setnumericDelimiterOption();
+	}
+
+	void setnumericDelimiterOption() throws DDIFtpException {
+		numericDelimiter = DdiEditorConfig
+				.get(DdiEditorConfig.SPSS_IMPORT_DECIMAL_SEPERATOR);
+		String pattern = null;
+
+		// DOT
+		if (numericDelimiter.equals(".")) {
+			pattern = "\\d+\\,\\d+";
+			numericSearchDelimiter = ",";
+		}
+		// COMMA
+		else if (numericDelimiter.equals(",")) {
+			pattern = "\\d+\\.\\d+";
+			numericSearchDelimiter = ".";
+		}
+		// guard
+		else {
+			throw new DDIFtpException(
+					"Option: "
+							+ DdiEditorConfig.SPSS_IMPORT_DECIMAL_SEPERATOR
+							+ " is set incorectly. Only: ['.', ','] aply. Current value: "
+							+ numericDelimiter, new Throwable());
+		}
+		numericDelimiterPattern = Pattern.compile(pattern);
 	}
 
 	/**
@@ -1058,8 +1099,8 @@ public class SPSSFile extends RandomAccessFile {
 							DDI3_PHYSICAL_PRODUCT_NAMESPACE,
 							"DefaultDecimalSeparator"));
 
-			// TODO make this property
-			elem.setTextContent(".");
+			elem.setTextContent(DdiEditorConfig
+					.get(DdiEditorConfig.SPSS_IMPORT_DECIMAL_SEPERATOR));
 
 			// gross record structure
 			Element grossRecordStructure = (Element) physicalStructure

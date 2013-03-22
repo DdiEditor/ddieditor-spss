@@ -35,6 +35,7 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
 
 import org.opendatafoundation.data.FileFormatInfo;
 import org.opendatafoundation.data.Utils;
@@ -146,7 +147,7 @@ public class SPSSNumericVariable extends SPSSVariable {
 			formatStr = "Dollar" + getLength() + "." + getDecimals();
 			break;
 		case 5: // fixed format (default)
-			if (getDecimals()>0) {
+			if (getDecimals() > 0) {
 				formatStr = "real";
 			} else {
 				formatStr = "integer";
@@ -347,6 +348,16 @@ public class SPSSNumericVariable extends SPSSVariable {
 		// some number formats may contain a comma
 		if (dataFormat.format == FileFormatInfo.Format.ASCII) {
 			if (dataFormat.asciiFormat == FileFormatInfo.ASCIIFormat.CSV) {
+				// apply numeric delimiter setting
+				Matcher matcher = this.spssFile.numericDelimiterPattern
+						.matcher(strValue);
+				if (matcher.find()) {
+					strValue = strValue.replace(
+							this.spssFile.numericSearchDelimiter,
+							this.spssFile.numericDelimiter);
+				}
+
+				// apply csv encoding rules
 				if (strValue.contains(",") || strValue.contains("\"")
 						|| strValue.contains("\n")) {
 					strValue = "\"" + strValue + "\"";
