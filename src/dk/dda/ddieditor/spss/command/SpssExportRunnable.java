@@ -258,7 +258,7 @@ public class SpssExportRunnable implements Runnable {
 					if (vari.getValueRepresentation() instanceof CodeRepresentationType) {
 						sppsNumericSyntax(physicalLocation);
 						addSpssSyntax(variables);
-						
+
 						// VALUE LABELS
 						initSpssSyntax(label);
 						spssValueLabel(vari
@@ -391,7 +391,7 @@ public class SpssExportRunnable implements Runnable {
 	 *            reference to DDI-L code scheme
 	 * @throws Exception
 	 */
-	void spssValueLabel(ReferenceType codeSchemeReference) throws Exception {		
+	void spssValueLabel(ReferenceType codeSchemeReference) throws Exception {
 		// resolve references
 		CodeSchemeDocument codeScheme = CodeSchemeDao
 				.getAllCodeSchemeByReference(new ReferenceResolution(
@@ -711,7 +711,8 @@ public class SpssExportRunnable implements Runnable {
 			}
 		}
 		return new BufferedWriter(new OutputStreamWriter(
-				new FileOutputStream(f), "UTF8"));
+				new FileOutputStream(f),
+				DdiEditorConfig.get(DdiEditorConfig.SPSS_IMPORT_CHARSET)));
 	}
 
 	/**
