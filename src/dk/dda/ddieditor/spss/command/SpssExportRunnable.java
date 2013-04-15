@@ -109,9 +109,9 @@ public class SpssExportRunnable implements Runnable {
 
 	// MISSING VALUES
 	List<String> missingValues = new ArrayList<String>();
-	int[] unknown = new int[] { 9, 99, 999, 9999 };
-	int[] irrelevant = new int[] { 10, 100, 1000, 10000 };
-	int[] didnotparticipate = new int[] { 11, 101, 1001, 10001 };
+	int[] unknown = new int[] { 9, 99, 999, 9999, 99999, 999999, 99999999 };
+	int[] irrelevant = new int[] { 10, 100, 1000, 10000, 100000, 1000000, 10000000 };
+	int[] didnotparticipate = new int[] { 11, 101, 1001, 10001, 100001, 1000001, 10000001 };
 	String[] missingValueLabels = null;
 
 	// VARIABLE LEVEL
