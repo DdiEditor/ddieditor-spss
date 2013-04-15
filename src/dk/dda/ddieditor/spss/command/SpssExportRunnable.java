@@ -599,6 +599,15 @@ public class SpssExportRunnable implements Runnable {
 			writer = createOutFile(exportSpssWizard.exportPath + File.separator
 					+ exportSpssWizard.fileName);
 
+			// utf-8 bom
+			if (DdiEditorConfig.get(DdiEditorConfig.SPSS_IMPORT_CHARSET)
+					.toLowerCase().equals("utf-8")
+					&& DdiEditorConfig.get(DdiEditorConfig.UTF8_ADD_BOM).equals(
+							"true")) {
+				// add utf-8 BOM
+				writer.write('\ufeff');
+			}
+			
 			// header
 			writer.write("* "
 					+ Translator.formatIso8601DateTime(System
