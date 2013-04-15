@@ -154,7 +154,8 @@ public class SPSSDataRecord {
                         }
                         else {
                             // string variable
-                            throw new SPSSFileException("Error reading data: unexpected SYSMISS for string variable"); 
+                        	// comment out 20130412, ignore sysmiss on string variable
+                            // throw new SPSSFileException("Error reading data: unexpected SYSMISS for string variable"); 
                         }
                         break;
                     default: // 1-251 value is code minus the compression BIAS (normally always equal to 100)
