@@ -349,7 +349,16 @@ public class SPSSFile extends RandomAccessFile {
 		log("\nExporting data to " + file.getCanonicalPath());
 		start = System.currentTimeMillis();
 		FileOutputStream fos = new FileOutputStream(file);
-		OutputStreamWriter out = new OutputStreamWriter(fos, "UTF-8");
+		OutputStreamWriter out = new OutputStreamWriter(fos,
+				DdiEditorConfig.get(DdiEditorConfig.SPSS_IMPORT_CHARSET));
+
+		if (DdiEditorConfig.get(DdiEditorConfig.SPSS_IMPORT_CHARSET)
+				.toLowerCase().equals("utf-8")
+				&& DdiEditorConfig.get(DdiEditorConfig.UTF8_ADD_BOM).equals(
+						"true")) {
+			// add utf-8 BOM
+			out.write('\ufeff');
+		}
 
 		// 20070915-PH: added test for empty files
 		if (this.infoRecord.numberOfCases > 0) {
