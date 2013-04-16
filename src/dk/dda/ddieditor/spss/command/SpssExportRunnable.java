@@ -110,8 +110,10 @@ public class SpssExportRunnable implements Runnable {
 	// MISSING VALUES
 	List<String> missingValues = new ArrayList<String>();
 	int[] unknown = new int[] { 9, 99, 999, 9999, 99999, 999999, 99999999 };
-	int[] irrelevant = new int[] { 10, 100, 1000, 10000, 100000, 1000000, 10000000 };
-	int[] didnotparticipate = new int[] { 11, 101, 1001, 10001, 100001, 1000001, 10000001 };
+	int[] irrelevant = new int[] { 10, 100, 1000, 10000, 100000, 1000000,
+			10000000 };
+	int[] didnotparticipate = new int[] { 11, 101, 1001, 10001, 100001,
+			1000001, 10000001 };
 	String[] missingValueLabels = null;
 
 	// VARIABLE LEVEL
@@ -601,13 +603,11 @@ public class SpssExportRunnable implements Runnable {
 
 			// utf-8 bom
 			if (DdiEditorConfig.get(DdiEditorConfig.SPSS_IMPORT_CHARSET)
-					.toLowerCase().equals("utf-8")
-					&& DdiEditorConfig.get(DdiEditorConfig.UTF8_ADD_BOM).equals(
-							"true")) {
+					.toLowerCase().equals("utf-8")) {
 				// add utf-8 BOM
 				writer.write('\ufeff');
 			}
-			
+
 			// header
 			writer.write("* "
 					+ Translator.formatIso8601DateTime(System
