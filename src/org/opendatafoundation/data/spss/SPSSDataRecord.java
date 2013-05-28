@@ -29,8 +29,12 @@ package org.opendatafoundation.data.spss;
  * 
  */
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Iterator;
+
+import org.ddialliance.ddieditor.util.DdiEditorConfig;
 
 /**
  * Class to read SPSS comrepssed/uncompressedf data record 
@@ -68,7 +72,7 @@ public class SPSSDataRecord {
         SPSSNumericVariable numVar = null;
         double numData=Double.NaN;
         SPSSStringVariable strVar = null;
-        String strData="";
+        ByteArrayOutputStream strData= new ByteArrayOutputStream();
 
         // init
         file = is;
@@ -79,7 +83,7 @@ public class SPSSDataRecord {
         while(varIterator.hasNext()) {
             SPSSVariable var = file.variableMap.get(varIterator.next());
 
-            //file.log("\nVARIABLE "+var.variableRecord.name+" pointer "+file.getFilePointer());
+            file.log("\nVARIABLE "+var.variableRecord.name+" pointer "+file.getFilePointer());
             
             // compute number of blocks used by this variable
             int blocksToRead=0; /** Number of data storage blocks used by the current variable */ 
@@ -92,7 +96,7 @@ public class SPSSDataRecord {
                 blocksToRead=1;
             }
             else {
-                strData="";
+                strData.write(new String("").getBytes());
                 // string: depends on string length but always in blocks of 8 bytes
                 charactersToRead = var.variableRecord.variableTypeCode;
                 blocksToRead = ( (charactersToRead-1) / 8) + 1;
@@ -100,12 +104,12 @@ public class SPSSDataRecord {
                 
             // read the variable from the file 
             while(blocksToRead > 0) {
-                //file.log("REMAINING #blocks ="+blocksToRead);
+                file.log("REMAINING #blocks ="+blocksToRead);
                 if(file.isCompressed()) {
                     /* COMPRESSED DATA FILE */
-                    //file.log("cluster index "+clusterIndex);
+                    file.log("cluster index "+clusterIndex);
                     if(clusterIndex>7) {
-                        //file.log("READ CLUSTER");
+                        file.log("READ CLUSTER");
                         // need to read a new compression cluster of up to 8 variables
                         file.read(cluster);
                         clusterIndex=0;
@@ -128,7 +132,7 @@ public class SPSSDataRecord {
                             // read a maximum of 8 characters but could be less if this is the last block
                             int blockStringLength = Math.min(8,charactersToRead);
                             // append to existing value
-                            strData += file.readSPSSString(blockStringLength);
+                            strData.write(file.readSPSSBytes(blockStringLength));
                             // if this is the last block, skip the remaining dummy byte(s) (in the block of 8 bytes)
                             if(charactersToRead<8) {
                                 file.skipBytes(8-charactersToRead);
@@ -144,7 +148,7 @@ public class SPSSDataRecord {
                         }
                         else {
                             // append 8 spaces to existing value
-                            strData  += "        ";
+                            strData.write(new String("        ").getBytes());
                         }
                         break;
                     case 255: // system missing value
@@ -170,7 +174,7 @@ public class SPSSDataRecord {
                         	// commet out 20111020, reason on import more than once exception thrown on same data file!
                         	
                             //throw new SPSSFileException("Error reading data: unexpected compression code for string variable"); 
-                        	//System.out.println(var.variableName+" - "+var.type);
+                        	System.out.println(var.variableName+" - "+var.type);
                         }
                         break;
                     }
@@ -184,7 +188,7 @@ public class SPSSDataRecord {
                         // read a maximum of 8 characters but could be less if this is the last block
                         int blockStringLength = Math.min(8,charactersToRead);
                         // append to existing value
-                        strData += file.readSPSSString(blockStringLength);
+                        strData.write(file.readSPSSBytes(blockStringLength));
                         // if this is the last block, skip the remaining dummy byte(s) (in block of 8 bytes)
                         if(charactersToRead<8) {
                             //file.log("SKIP "+file.skipBytes(8-charactersToRead)+"/"+(8-charactersToRead));    
@@ -194,17 +198,6 @@ public class SPSSDataRecord {
                     }
                 }
                 blocksToRead--;
-            }
-            // Post=processing for string variables
-            if(var.type==SPSSVariable.VariableType.STRING) {
-                // If the variable is a string and all the blocks where blank (254), make it an empty string
-                if(strData.trim().length()==0) {
-                    strData = "";
-                }
-                else {
-                    // right trim only
-                    strData = strData.replaceAll("\\s+$", "");
-                }
             }
 
             // Store in variable 
@@ -220,12 +213,24 @@ public class SPSSDataRecord {
             }
             else { // STRING
                 strVar = (SPSSStringVariable) var;
-                if(fromDisk) strVar.value = strData;
+				byte[] bt = strData.toByteArray();
+				String str = new String(strData.toByteArray(),
+						Charset.forName(DdiEditorConfig
+								.get(DdiEditorConfig.SPSS_IMPORT_CHARSET)));
+				// If all the blocks where blank (254), make it an empty string
+				if (str.trim().length() == 0) {
+					str = "";
+				} else {
+					// right trim only
+					str = str.replaceAll("\\s+$", "");
+				}
+                if(fromDisk) strVar.value = str;
                 else {
                     strVar.data.add("");
                     dataIndex = strVar.data.size()-1;
-                    strVar.data.set(dataIndex,strData); 
+                    strVar.data.set(dataIndex,str); 
                 }
+                strData.reset();
                 //file.log("chars "+charactersToRead+" blocks "+blocksToRead);
             }
             

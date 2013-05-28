@@ -37,6 +37,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
+import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.URI;
 import java.text.SimpleDateFormat;
@@ -1619,7 +1620,7 @@ public class SPSSFile extends RandomAccessFile {
 												// SPSSDataRecord as well
 		}
 
-		// Read data
+		// Read SPSS data
 		data.read(this, true);
 
 		// read variables
@@ -1655,6 +1656,7 @@ public class SPSSFile extends RandomAccessFile {
 			recordStr += var.getValueAsString(0, dataFormat);
 			n++;
 		}
+		log("Record: <"+recordStr+"> <"+dataFormat+">");
 		return (recordStr);
 	}
 
@@ -2044,6 +2046,13 @@ public class SPSSFile extends RandomAccessFile {
 		}
 		return (SPSSUtils.byte4ToInt(buffer));
 	}
+	
+	static boolean isMultiByte(char c) throws UnsupportedEncodingException {
+		String s = Character.toString(c);
+		byte[] byteArr = s.getBytes("UTF-8");
+		return byteArr.length == 1;
+	}
+
 
 	/**
 	 * Reads a string from the SPSS file
@@ -2055,8 +2064,21 @@ public class SPSSFile extends RandomAccessFile {
 	public String readSPSSString(int length) throws IOException {
 		String s = "";
 		byte[] buffer = new byte[length];
-		this.read(buffer);
+		buffer = readSPSSBytes(length);
 		s = SPSSUtils.byte8ToString(buffer);
 		return s;
+	}
+
+	/**
+	 * Reads bytes from the SPSS file
+	 * 
+	 * @param length
+	 *            Number of characters to read
+	 * @return array of bytes from the file
+	 */
+	public byte[] readSPSSBytes(int length) throws IOException {
+		byte[] buffer = new byte[length];
+		this.read(buffer);
+		return buffer;
 	}
 }
