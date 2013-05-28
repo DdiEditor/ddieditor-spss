@@ -545,7 +545,7 @@ public class SPSSNumericVariable extends SPSSVariable {
 			case 39: // Date in yy/mm/dd or yyyy/mm/dd
 				calendar = SPSSUtils.numericToCalendar(value);
 				if (this.getLength() == 10)
-					strFormat += "%1$tY/%1$tm.%1$td";
+     				strFormat += "%1$tY/%1$tm/%1$td";
 				else
 					strFormat += "%1$ty/%1$tm/%1$td";
 				strValue = String.format(Locale.US, strFormat, calendar);
