@@ -87,7 +87,7 @@ public class SPSSDataRecord {
             
             // compute number of blocks used by this variable
             int blocksToRead=0; /** Number of data storage blocks used by the current variable */ 
-            int charactersToRead=0; /** Number of chacarters to read for a string variable */
+            int bytesToRead=0; /** Number of bytes (may differs from characters) to read for a string variable */
             int dataIndex = 0;
 
             // init 
@@ -98,8 +98,8 @@ public class SPSSDataRecord {
             else {
                 strData.write(new String("").getBytes());
                 // string: depends on string length but always in blocks of 8 bytes
-                charactersToRead = var.variableRecord.variableTypeCode;
-                blocksToRead = ( (charactersToRead-1) / 8) + 1;
+                bytesToRead = var.variableRecord.variableTypeCode;
+                blocksToRead = ( (bytesToRead-1) / 8) + 1;
             }
                 
             // read the variable from the file 
@@ -129,16 +129,16 @@ public class SPSSDataRecord {
                             numData =file.readSPSSDouble();
                         }
                         else {  // STRING
-                            // read a maximum of 8 characters but could be less if this is the last block
-                            int blockStringLength = Math.min(8,charactersToRead);
+                            // read a maximum of 8 bytes (not characters) but could be less if this is the last block
+                            int blockStringLength = Math.min(8,bytesToRead);
                             // append to existing value
                             strData.write(file.readSPSSBytes(blockStringLength));
                             // if this is the last block, skip the remaining dummy byte(s) (in the block of 8 bytes)
-                            if(charactersToRead<8) {
-                                file.skipBytes(8-charactersToRead);
+                            if(bytesToRead<8) {
+                                file.skipBytes(8-bytesToRead);
                             }
                             // update the characters counter
-                            charactersToRead -= blockStringLength; 
+                            bytesToRead -= blockStringLength; 
                         }
                         break;
                     case 254: // all blanks
@@ -185,16 +185,16 @@ public class SPSSDataRecord {
                         numData = file.readSPSSDouble();
                     }
                     else {
-                        // read a maximum of 8 characters but could be less if this is the last block
-                        int blockStringLength = Math.min(8,charactersToRead);
+                        // read a maximum of 8 bytes (not characters) but could be less if this is the last block
+                        int blockStringLength = Math.min(8,bytesToRead);
                         // append to existing value
                         strData.write(file.readSPSSBytes(blockStringLength));
                         // if this is the last block, skip the remaining dummy byte(s) (in block of 8 bytes)
-                        if(charactersToRead<8) {
-                            //file.log("SKIP "+file.skipBytes(8-charactersToRead)+"/"+(8-charactersToRead));    
+                        if(bytesToRead<8) {
+                            //file.log("SKIP "+file.skipBytes(8-bytesToRead)+"/"+(8-bytesToRead));    
                         }
                         // update counter
-                        charactersToRead -= blockStringLength; 
+                        bytesToRead -= blockStringLength; 
                     }
                 }
                 blocksToRead--;
