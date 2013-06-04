@@ -83,7 +83,7 @@ public class SPSSDataRecord {
         while(varIterator.hasNext()) {
             SPSSVariable var = file.variableMap.get(varIterator.next());
 
-            file.log("\nVARIABLE "+var.variableRecord.name+" pointer "+file.getFilePointer());
+            //file.log("\nVARIABLE "+var.variableRecord.name+" pointer "+file.getFilePointer());
             
             // compute number of blocks used by this variable
             int blocksToRead=0; /** Number of data storage blocks used by the current variable */ 
@@ -104,12 +104,12 @@ public class SPSSDataRecord {
                 
             // read the variable from the file 
             while(blocksToRead > 0) {
-                file.log("REMAINING #blocks ="+blocksToRead);
+                //file.log("REMAINING #blocks ="+blocksToRead);
                 if(file.isCompressed()) {
                     /* COMPRESSED DATA FILE */
-                    file.log("cluster index "+clusterIndex);
+                    //file.log("cluster index "+clusterIndex);
                     if(clusterIndex>7) {
-                        file.log("READ CLUSTER");
+                        //file.log("READ CLUSTER");
                         // need to read a new compression cluster of up to 8 variables
                         file.read(cluster);
                         clusterIndex=0;
