@@ -1540,6 +1540,10 @@ public class SPSSFile extends RandomAccessFile {
 					SPSSFile.DDI3_PHYSICAL_INSTANCE_NAMESPACE,
 					"OverallRecordCount"));
 			elem.setTextContent("" + this.getRecordCount());
+			
+			// Statistics
+			Element statistics = (Element) physicalInstance.appendChild(doc
+					.createElementNS(DDI3_PHYSICAL_INSTANCE_NAMESPACE, "Statistics"));
 
 		} catch (ParserConfigurationException e) {
 			throw new SPSSFileException("Error creating DDI PhysicalInstance: "
