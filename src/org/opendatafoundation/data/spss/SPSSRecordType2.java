@@ -337,6 +337,18 @@ public class SPSSRecordType2 extends SPSSAbstractRecordType {
 		if (hasLabel == 1) {
 			labelLength = is.readSPSSInt();
 			label = is.readSPSSString(labelLength);
+			// check for non printable characters in variable label
+			char[] labelArray = new char[label.length()];
+			label.getChars(0, label.length(), labelArray, 0);
+			for (int j = 0; j < label.length(); j++) {
+				char ch = labelArray[j];
+				if (ch < ' ') {
+					throw new SPSSFileException(
+							"Non printable character in Variable Label af: Variable Name: ["
+									+ name + "]. None printable character: ["
+									+ ch + "]");
+				}
+			}
 			// variableRecord labels are stored in chunks of 4-bytes
 			// --> we need to skip unused bytes in the last chunk
 			if ((labelLength % 4) != 0)
