@@ -31,6 +31,8 @@ package org.opendatafoundation.data.spss;
 
 import java.io.IOException;
 
+import org.ddialliance.ddiftp.util.Translator;
+
 /**
  * SPSS Record Type 2 - Variable information
  * 
@@ -343,10 +345,9 @@ public class SPSSRecordType2 extends SPSSAbstractRecordType {
 			for (int j = 0; j < label.length(); j++) {
 				char ch = labelArray[j];
 				if (ch < ' ') {
-					throw new SPSSFileException(
-							"Non printable character in Variable Label af: Variable Name: ["
-									+ name + "]. None printable character: ["
-									+ ch + "]");
+					throw new SPSSFileException(Translator.trans(
+							"spss.error.nonprintcharinvarilabel", new Object[] {
+									name, ch }));
 				}
 			}
 			// variableRecord labels are stored in chunks of 4-bytes
