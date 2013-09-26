@@ -64,6 +64,8 @@ public class ImportSpssWizard extends Wizard {
 
 	public boolean createCategories = false;
 	public boolean createMeasure = true;
+	public boolean validateLabel = false;
+	public boolean correctReportLabelError = false;
 
 	// variablerec
 	public boolean variableRec = false;
@@ -266,6 +268,42 @@ public class ImportSpssWizard extends Wizard {
 							// do nothing
 						}
 					});
+
+			// encoding validation
+			Button labelValidationButton = editor.createCheckBox(group, "",
+					Translator.trans("spss.ddipage.validateencoding"));
+			labelValidationButton
+					.addSelectionListener(new SelectionListener() {
+						@Override
+						public void widgetSelected(SelectionEvent e) {
+							validateLabel = ((Button) e.widget)
+									.getSelection();
+						}
+
+						@Override
+						public void widgetDefaultSelected(SelectionEvent e) {
+							// do nothing
+						}
+					});
+			// correct/report encoding error
+			Button CorrectReportLabelErrorButton = editor.createCheckBox(group, "",
+					Translator.trans("spss.ddipage.correctreportencodingerror"));
+			CorrectReportLabelErrorButton
+					.addSelectionListener(new SelectionListener() {
+						@Override
+						public void widgetSelected(SelectionEvent e) {
+							correctReportLabelError = ((Button) e.widget)
+									.getSelection();
+						}
+
+						@Override
+						public void widgetDefaultSelected(SelectionEvent e) {
+							// do nothing
+						}
+					});
+			CorrectReportLabelErrorButton.setSelection(true);
+			correctReportLabelError = true;
+			CorrectReportLabelErrorButton.setEnabled(true);
 
 			// loaded resources
 			try {

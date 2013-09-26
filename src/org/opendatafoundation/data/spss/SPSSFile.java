@@ -41,10 +41,12 @@ import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.URI;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
@@ -67,6 +69,7 @@ import org.ddialliance.ddieditor.util.DdiEditorConfig;
 import org.ddialliance.ddiftp.util.DDIFtpException;
 import org.opendatafoundation.data.FileFormatInfo;
 import org.opendatafoundation.data.Utils;
+import org.opendatafoundation.data.ValidationReportElement;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -1610,7 +1613,7 @@ public class SPSSFile extends RandomAccessFile {
 	public String getRecordFromDisk(FileFormatInfo dataFormat, boolean rewind)
 			throws SPSSFileException, IOException {
 		if (!isMetadataLoaded)
-			loadMetadata();
+			loadMetadata(false, false, null);
 
 		String recordStr = "";
 
@@ -1726,7 +1729,7 @@ public class SPSSFile extends RandomAccessFile {
 	 * @throws IOException
 	 * @throws SPSSFileException
 	 */
-	public void loadMetadata() throws FileNotFoundException, IOException,
+	public void loadMetadata(boolean validateLabel, boolean replaceAndReport, List<ValidationReportElement> reportList) throws FileNotFoundException, IOException,
 			SPSSFileException {
 		long filePointer;
 		int recordType;
@@ -1754,7 +1757,7 @@ public class SPSSFile extends RandomAccessFile {
 		do {
 			// log("reading variableRecord record "+(i+1)+" of " +
 			// this.info.OBSperObservation);
-			SPSSRecordType2 type2Record = new SPSSRecordType2();
+			SPSSRecordType2 type2Record = new SPSSRecordType2(validateLabel, replaceAndReport, reportList);
 			type2Record.read(this);
 
 			// ignore string continuation records (variableTypeCode = -1)

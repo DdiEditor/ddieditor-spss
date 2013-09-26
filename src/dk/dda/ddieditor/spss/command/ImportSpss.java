@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.xmlbeans.XmlObject;
@@ -32,6 +33,7 @@ import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.ui.PlatformUI;
 import org.opendatafoundation.data.FileFormatInfo;
 import org.opendatafoundation.data.Utils;
+import org.opendatafoundation.data.ValidationReportElement;
 import org.opendatafoundation.data.spss.ExportOptions;
 import org.opendatafoundation.data.spss.SPSSFile;
 import org.w3c.dom.Document;
@@ -154,7 +156,22 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 				// logical product
 				//
 				if (importSpssWizard.variable) {
-					spssFile.loadMetadata();
+					List<ValidationReportElement> reportList = new ArrayList<ValidationReportElement>();
+					spssFile.loadMetadata(importSpssWizard.validateLabel, importSpssWizard.correctReportLabelError, reportList);
+					StringBuilder mess = new StringBuilder();
+					for (ValidationReportElement validationReportElement : reportList) {
+						mess.append("\n" + validationReportElement.getId() + "\t"
+								+ validationReportElement.getType() + "\t"
+								+ validationReportElement.getDescr());
+					}
+					if (mess.length() > 0) {
+						MessageDialog.openError(PlatformUI.getWorkbench()
+								.getDisplay().getActiveShell(),
+								Translator.trans("spss.error.title"),
+								mess.toString());
+					}
+					
+					// 
 					ExportOptions exportOptions = new ExportOptions();
 					exportOptions.createCategories = importSpssWizard.createCategories;
 					exportOptions.createMeasure = importSpssWizard.createMeasure;
@@ -216,7 +233,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 				//
 				if (importSpssWizard.variableRec) {
 					if (!spssFile.isMetadataLoaded) {
-						spssFile.loadMetadata();
+						spssFile.loadMetadata(false, false, null);
 					}
 
 					// logical product id
@@ -268,7 +285,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 				//
 				if (importSpssWizard.variableDataFile) {
 					if (!spssFile.isMetadataLoaded) {
-						spssFile.loadMetadata();
+						spssFile.loadMetadata(false, false, null);
 					}
 					if (!spssFile.isDataLoaded) {
 						spssFile.loadData();

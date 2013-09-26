@@ -30,8 +30,12 @@ package org.opendatafoundation.data.spss;
  */
 
 import java.io.IOException;
+import java.util.List;
 
+import org.ddialliance.ddieditor.ui.model.ElementType;
+import org.ddialliance.ddiftp.util.DDIFtpException;
 import org.ddialliance.ddiftp.util.Translator;
+import org.opendatafoundation.data.ValidationReportElement;
 
 /**
  * SPSS Record Type 2 - Variable information
@@ -58,9 +62,26 @@ public class SPSSRecordType2 extends SPSSAbstractRecordType {
 	String label;
 	// double missingValue2[] = new double[3];
 	byte missingValue[][] = new byte[3][8];
+	boolean validateLabel;
+	boolean replaceAndReport;
+	List<ValidationReportElement> reportList;
 
 	/* The value label set associated with this variableRecord */
 	SPSSRecordType3 valueLabelSet;
+	
+	/**
+	 * 
+	 * @param validateLabel - 		if true: validate for non printable characters of labels
+	 * 								if false: no validation done
+	 * @param replaceAndReport -	if true: replace and report non printable characters
+	 * 								if false: throw exception if non printable characters found
+	 * @param reportList
+	 */
+	public SPSSRecordType2(boolean validateLabel, boolean replaceAndReport, List<ValidationReportElement> reportList) {
+		this.reportList = reportList;
+		this.validateLabel = validateLabel;
+		this.replaceAndReport = replaceAndReport;
+	}
 
 	/**
 	 * @return The code matching the format type
@@ -299,6 +320,46 @@ public class SPSSRecordType2 extends SPSSAbstractRecordType {
 		}
 		return (label);
 	}
+	
+	/**
+	 * Check label for non printable characters
+	 * 
+	 * @param string
+	 * @throws SPSSFileException 
+	 */
+	private String validateLabel(String string) throws SPSSFileException {
+		if (validateLabel) {
+			// check for non printable characters
+			char[] charArray = new char[string.length()];
+			string.getChars(0, string.length(), charArray, 0);
+			for (int j = 0; j < string.length(); j++) {
+				char ch = charArray[j];
+				if (ch < ' ') {
+					// non printable character
+					if (replaceAndReport) {
+						charArray[j] = ' ';
+						try {
+							if (reportList != null) {
+								reportList.add(new ValidationReportElement(name,
+										ElementType.getElementType("Variable")
+												.getElementName(), Translator.trans("spss.error.nonprintchar1",
+														new Object[] { ch })));								
+							}
+						} catch (DDIFtpException e) {
+							// do nothing
+						}
+					} else {
+						throw new SPSSFileException(Translator.trans("spss.error.nonprintchar",
+								new Object[] { name, ch }));
+					}
+					if (replaceAndReport) {
+						string = new String(charArray);
+					}
+				}
+			}
+		}
+		return string;
+	}
 
 	/**
 	 * Read the record in the SPSS file
@@ -335,21 +396,12 @@ public class SPSSRecordType2 extends SPSSAbstractRecordType {
 		writeFormatZero = (writeFormatCode >> 24) & 0xFF; // byte 4
 		// name
 		name = is.readSPSSString(8).replaceAll("\\s+$", "");
+		name = validateLabel(name);
 		// label
 		if (hasLabel == 1) {
 			labelLength = is.readSPSSInt();
 			label = is.readSPSSString(labelLength);
-			// check for non printable characters in variable label
-			char[] labelArray = new char[label.length()];
-			label.getChars(0, label.length(), labelArray, 0);
-			for (int j = 0; j < label.length(); j++) {
-				char ch = labelArray[j];
-				if (ch < ' ') {
-					throw new SPSSFileException(Translator.trans(
-							"spss.error.nonprintcharinvarilabel", new Object[] {
-									name, ch }));
-				}
-			}
+			label = validateLabel(label);
 			// variableRecord labels are stored in chunks of 4-bytes
 			// --> we need to skip unused bytes in the last chunk
 			if ((labelLength % 4) != 0)
@@ -422,6 +474,5 @@ public class SPSSRecordType2 extends SPSSAbstractRecordType {
 			}
 		}
 		return (str);
-	}
-
+	}		
 }

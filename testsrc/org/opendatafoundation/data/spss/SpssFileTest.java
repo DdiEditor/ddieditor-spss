@@ -35,7 +35,7 @@ public class SpssFileTest {
 	@Test
 	public void SPSSFile() throws Exception {
 		SPSSFile spssFile = new SPSSFile(file);
-		spssFile.loadMetadata();
+		spssFile.loadMetadata(false, false, null);
 		// spssFile.dumpDDI3();
 		ExportOptions exportOptions = new ExportOptions();
 		exportOptions.createCategories = true;

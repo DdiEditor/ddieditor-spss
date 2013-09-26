@@ -83,11 +83,11 @@ public class SPSSDataRecord {
         while(varIterator.hasNext()) {
             SPSSVariable var = file.variableMap.get(varIterator.next());
 
-            //file.log("\nVARIABLE "+var.variableRecord.name+" pointer "+file.getFilePointer());
+            file.log("\nVARIABLE "+var.variableRecord.name+" pointer "+file.getFilePointer());
             
             // compute number of blocks used by this variable
             int blocksToRead=0; /** Number of data storage blocks used by the current variable */ 
-            int bytesToRead=0; /** Number of bytes (may differs from characters) to read for a string variable */
+            int charactersToRead=0; /** Number of chacarters to read for a string variable */
             int dataIndex = 0;
 
             // init 
@@ -98,18 +98,18 @@ public class SPSSDataRecord {
             else {
                 strData.write(new String("").getBytes());
                 // string: depends on string length but always in blocks of 8 bytes
-                bytesToRead = var.variableRecord.variableTypeCode;
-                blocksToRead = ( (bytesToRead-1) / 8) + 1;
+                charactersToRead = var.variableRecord.variableTypeCode;
+                blocksToRead = ( (charactersToRead-1) / 8) + 1;
             }
                 
             // read the variable from the file 
             while(blocksToRead > 0) {
-                //file.log("REMAINING #blocks ="+blocksToRead);
+                file.log("REMAINING #blocks ="+blocksToRead);
                 if(file.isCompressed()) {
                     /* COMPRESSED DATA FILE */
-                    //file.log("cluster index "+clusterIndex);
+                    file.log("cluster index "+clusterIndex);
                     if(clusterIndex>7) {
-                        //file.log("READ CLUSTER");
+                        file.log("READ CLUSTER");
                         // need to read a new compression cluster of up to 8 variables
                         file.read(cluster);
                         clusterIndex=0;
@@ -129,16 +129,16 @@ public class SPSSDataRecord {
                             numData =file.readSPSSDouble();
                         }
                         else {  // STRING
-                            // read a maximum of 8 bytes (not characters) but could be less if this is the last block
-                            int blockStringLength = Math.min(8,bytesToRead);
+                            // read a maximum of 8 characters but could be less if this is the last block
+                            int blockStringLength = Math.min(8,charactersToRead);
                             // append to existing value
                             strData.write(file.readSPSSBytes(blockStringLength));
                             // if this is the last block, skip the remaining dummy byte(s) (in the block of 8 bytes)
-                            if(bytesToRead<8) {
-                                file.skipBytes(8-bytesToRead);
+                            if(charactersToRead<8) {
+                                file.skipBytes(8-charactersToRead);
                             }
                             // update the characters counter
-                            bytesToRead -= blockStringLength; 
+                            charactersToRead -= blockStringLength; 
                         }
                         break;
                     case 254: // all blanks
@@ -185,16 +185,16 @@ public class SPSSDataRecord {
                         numData = file.readSPSSDouble();
                     }
                     else {
-                        // read a maximum of 8 bytes (not characters) but could be less if this is the last block
-                        int blockStringLength = Math.min(8,bytesToRead);
+                        // read a maximum of 8 characters but could be less if this is the last block
+                        int blockStringLength = Math.min(8,charactersToRead);
                         // append to existing value
                         strData.write(file.readSPSSBytes(blockStringLength));
                         // if this is the last block, skip the remaining dummy byte(s) (in block of 8 bytes)
-                        if(bytesToRead<8) {
-                            //file.log("SKIP "+file.skipBytes(8-bytesToRead)+"/"+(8-bytesToRead));    
+                        if(charactersToRead<8) {
+                            //file.log("SKIP "+file.skipBytes(8-charactersToRead)+"/"+(8-charactersToRead));    
                         }
                         // update counter
-                        bytesToRead -= blockStringLength; 
+                        charactersToRead -= blockStringLength; 
                     }
                 }
                 blocksToRead--;
