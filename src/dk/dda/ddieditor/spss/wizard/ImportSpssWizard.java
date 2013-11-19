@@ -63,7 +63,7 @@ public class ImportSpssWizard extends Wizard {
 	public boolean frequency = false;// null;
 
 	public boolean createCategories = false;
-	public boolean createMeasure = true;
+	public boolean createMeasure = false;
 	public boolean validateLabel = false;
 	public boolean correctReportLabelError = false;
 
@@ -239,7 +239,7 @@ public class ImportSpssWizard extends Wizard {
 			// create measure
 			Button createMeasureButton = editor.createCheckBox(group, "",
 					Translator.trans("spss.ddipage.createmeasures"));
-			createMeasureButton.setSelection(true);
+			createMeasureButton.setSelection(false);
 			createMeasureButton.addSelectionListener(new SelectionListener() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
