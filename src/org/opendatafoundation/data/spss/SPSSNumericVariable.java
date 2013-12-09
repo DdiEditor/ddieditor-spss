@@ -39,6 +39,7 @@ import java.util.regex.Matcher;
 
 import org.opendatafoundation.data.FileFormatInfo;
 import org.opendatafoundation.data.Utils;
+import org.opendatafoundation.data.ValidationReportElement;
 
 /**
  * SPSS numeric variable
@@ -62,8 +63,9 @@ public class SPSSNumericVariable extends SPSSVariable {
 	/**
 	 * Class constructor
 	 */
-	public SPSSNumericVariable(SPSSFile file) {
-		super(file);
+	public SPSSNumericVariable(SPSSFile file, boolean validateLabel,
+			boolean replaceAndReport, List<ValidationReportElement> reportList) {
+		super(file, validateLabel, replaceAndReport, reportList);
 		data = new ArrayList<Double>();
 		type = VariableType.NUMERIC;
 	}

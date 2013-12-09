@@ -40,6 +40,7 @@ import org.ddialliance.ddieditor.ui.model.ElementType;
 import org.ddialliance.ddiftp.util.DDIFtpException;
 import org.opendatafoundation.data.FileFormatInfo;
 import org.opendatafoundation.data.Utils;
+import org.opendatafoundation.data.ValidationReportElement;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -59,6 +60,10 @@ public abstract class SPSSVariable {
 	public SPSSRecordType3 valueLabelRecord; // < The optional SPSS type 3
 												// record holding this variable
 												// value labels
+	
+	boolean validateLabel;
+	boolean replaceAndReport;
+	List<ValidationReportElement> reportList = null;
 
 	static enum VariableType {
 		NUMERIC, STRING
@@ -129,8 +134,12 @@ public abstract class SPSSVariable {
 	 * @param file
 	 *            the SPSSFile this variable belongs to
 	 */
-	public SPSSVariable(SPSSFile file) {
+	public SPSSVariable(SPSSFile file, boolean validateLabel,
+			boolean replaceAndReport, List<ValidationReportElement> reportList) {
 		this.spssFile = file;
+		this.validateLabel = validateLabel;
+		this.replaceAndReport = replaceAndReport;
+		this.reportList = reportList;
 	}
 
 	/**
@@ -397,8 +406,9 @@ public abstract class SPSSVariable {
 					// category label
 					elem = (Element) category.appendChild(doc.createElementNS(
 							SPSSFile.DDI3_REUSABLE_NAMESPACE, "Label"));
-					elem.setTextContent(cat.label);
-					schemeLabelStrB.append(cat.label);
+					String label = Utils.validateLabel(validateLabel, replaceAndReport, cat.label, id, reportList);
+					elem.setTextContent(label);
+					schemeLabelStrB.append(label);
 					if (catIterator.hasNext()) {
 						schemeLabelStrB.append(", ");
 					}

@@ -34,6 +34,7 @@ import java.util.List;
 
 import org.opendatafoundation.data.FileFormatInfo;
 import org.opendatafoundation.data.Utils;
+import org.opendatafoundation.data.ValidationReportElement;
 
 /**
  * SPSS string variable
@@ -46,8 +47,9 @@ public class SPSSStringVariable extends SPSSVariable {
 	/** a single data value used when reading data from disk */
 	public String value;
 
-	public SPSSStringVariable(SPSSFile file) {
-		super(file);
+	public SPSSStringVariable(SPSSFile file, boolean validateLabel,
+			boolean replaceAndReport, List<ValidationReportElement> reportList) {
+		super(file, validateLabel, replaceAndReport, reportList);
 		type = VariableType.STRING;
 		data = new ArrayList<String>();
 	}

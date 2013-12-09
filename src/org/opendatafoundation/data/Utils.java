@@ -31,6 +31,7 @@ package org.opendatafoundation.data;
 
 import java.io.File;
 import java.io.StringWriter;
+import java.util.List;
 
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Result;
@@ -45,9 +46,13 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.ddialliance.ddi3.xml.xmlbeans.reusable.ReferenceType;
+import org.ddialliance.ddieditor.ui.model.ElementType;
 import org.ddialliance.ddieditor.util.DdiEditorConfig;
+import org.ddialliance.ddiftp.util.DDIFtpException;
+import org.ddialliance.ddiftp.util.Translator;
 import org.ddialliance.ddiftp.util.xml.XmlBeansUtil;
 import org.opendatafoundation.data.spss.SPSSFile;
+import org.opendatafoundation.data.spss.SPSSFileException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -294,4 +299,50 @@ public class Utils {
 		}
 		return agency;
 	}
+	
+	/**
+	 * Check label for non printable characters
+	 * 
+	 * @param string
+	 * @throws SPSSFileException 
+	 */
+	public static String validateLabel(boolean validateLabel,
+			boolean replaceAndReport, String string, String id,
+			List<ValidationReportElement> reportList) throws DDIFtpException {
+		if (validateLabel) {
+			// check for non printable characters
+			char[] charArray = new char[string.length()];
+			string.getChars(0, string.length(), charArray, 0);
+			for (int j = 0; j < string.length(); j++) {
+				char ch = charArray[j];
+				if (ch < ' ') {
+					// non printable character
+					if (replaceAndReport) {
+						charArray[j] = ' ';
+						try {
+							if (reportList != null) {
+								reportList.add(new ValidationReportElement(
+										id, ElementType.getElementType(
+												"Variable").getElementName(),
+										Translator.trans(
+												"spss.error.nonprintchar1",
+												new Object[] { ch })));
+							}
+						} catch (DDIFtpException e) {
+							// do nothing
+						}
+					} else {
+						throw new DDIFtpException(Translator.trans(
+								"spss.error.nonprintchar", new Object[] { id,
+										ch }));
+					}
+					if (replaceAndReport) {
+						string = new String(charArray);
+					}
+				}
+			}
+		}
+		return string;
+	}
+
 }

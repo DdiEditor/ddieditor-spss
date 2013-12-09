@@ -35,6 +35,7 @@ import java.util.List;
 import org.ddialliance.ddieditor.ui.model.ElementType;
 import org.ddialliance.ddiftp.util.DDIFtpException;
 import org.ddialliance.ddiftp.util.Translator;
+import org.opendatafoundation.data.Utils;
 import org.opendatafoundation.data.ValidationReportElement;
 
 /**
@@ -322,46 +323,6 @@ public class SPSSRecordType2 extends SPSSAbstractRecordType {
 	}
 	
 	/**
-	 * Check label for non printable characters
-	 * 
-	 * @param string
-	 * @throws SPSSFileException 
-	 */
-	private String validateLabel(String string) throws SPSSFileException {
-		if (validateLabel) {
-			// check for non printable characters
-			char[] charArray = new char[string.length()];
-			string.getChars(0, string.length(), charArray, 0);
-			for (int j = 0; j < string.length(); j++) {
-				char ch = charArray[j];
-				if (ch < ' ') {
-					// non printable character
-					if (replaceAndReport) {
-						charArray[j] = ' ';
-						try {
-							if (reportList != null) {
-								reportList.add(new ValidationReportElement(name,
-										ElementType.getElementType("Variable")
-												.getElementName(), Translator.trans("spss.error.nonprintchar1",
-														new Object[] { ch })));								
-							}
-						} catch (DDIFtpException e) {
-							// do nothing
-						}
-					} else {
-						throw new SPSSFileException(Translator.trans("spss.error.nonprintchar",
-								new Object[] { name, ch }));
-					}
-					if (replaceAndReport) {
-						string = new String(charArray);
-					}
-				}
-			}
-		}
-		return string;
-	}
-
-	/**
 	 * Read the record in the SPSS file
 	 */
 	public void read(SPSSFile is) throws IOException, SPSSFileException {
@@ -396,16 +357,22 @@ public class SPSSRecordType2 extends SPSSAbstractRecordType {
 		writeFormatZero = (writeFormatCode >> 24) & 0xFF; // byte 4
 		// name
 		name = is.readSPSSString(8).replaceAll("\\s+$", "");
-		name = validateLabel(name);
-		// label
-		if (hasLabel == 1) {
-			labelLength = is.readSPSSInt();
-			label = is.readSPSSString(labelLength);
-			label = validateLabel(label);
-			// variableRecord labels are stored in chunks of 4-bytes
-			// --> we need to skip unused bytes in the last chunk
-			if ((labelLength % 4) != 0)
-				is.skipBytes(4 - (labelLength % 4));
+		try {
+			name = Utils.validateLabel(validateLabel, replaceAndReport, name,
+					name, reportList);
+			// label
+			if (hasLabel == 1) {
+				labelLength = is.readSPSSInt();
+				label = is.readSPSSString(labelLength);
+				label = Utils.validateLabel(validateLabel, replaceAndReport,
+						label, name, reportList);
+				// variableRecord labels are stored in chunks of 4-bytes
+				// --> we need to skip unused bytes in the last chunk
+				if ((labelLength % 4) != 0)
+					is.skipBytes(4 - (labelLength % 4));
+			}
+		} catch (DDIFtpException e) {
+			throw new SPSSFileException(e.getMessage());
 		}
 		// missing values
 		for (int i = 0; i < Math.abs(missingValueFormatCode); i++) {

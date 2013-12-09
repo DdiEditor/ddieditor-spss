@@ -1772,9 +1772,9 @@ public class SPSSFile extends RandomAccessFile {
 				SPSSVariable var;
 
 				if (type2Record.variableTypeCode == 0) {
-					var = new SPSSNumericVariable(this);
+					var = new SPSSNumericVariable(this, validateLabel, replaceAndReport, reportList);
 				} else {
-					var = new SPSSStringVariable(this);
+					var = new SPSSStringVariable(this, validateLabel, replaceAndReport, reportList);
 				}
 
 				// saves this record in the variable
