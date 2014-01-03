@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.xmlbeans.XmlObject;
 import org.ddialliance.ddi3.xml.xmlbeans.logicalproduct.CategorySchemeDocument;
@@ -109,11 +111,18 @@ public class SpssExportRunnable implements Runnable {
 
 	// MISSING VALUES
 	List<String> missingValues = new ArrayList<String>();
-	int[] unknown = new int[] { 9, 99, 999, 9999, 99999, 999999, 99999999 };
-	int[] irrelevant = new int[] { 10, 100, 1000, 10000, 100000, 1000000,
-			10000000 };
-	int[] didnotparticipate = new int[] { 11, 101, 1001, 10001, 100001,
-			1000001, 10000001 };
+
+	// comment out 20140103
+	// int[] unknown = new int[] { 9, 99, 999, 9999, 99999, 999999, 99999999 };
+	// int[] irrelevant = new int[] { 10, 100, 1000, 10000, 100000, 1000000,
+	// 10000000 };
+	// int[] didnotparticipate = new int[] { 11, 101, 1001, 10001, 100001,
+	// 1000001, 10000001 };
+
+	Pattern unknownPattern = Pattern.compile("^9+$");
+	Pattern irrelevantPattern = Pattern.compile("^10+$");
+	Pattern didnotparticipatePattern = Pattern.compile("^1{1}0*1{1}$");
+
 	String[] missingValueLabels = null;
 
 	// VARIABLE LEVEL
@@ -192,8 +201,8 @@ public class SpssExportRunnable implements Runnable {
 											.getLabelList());
 					if (label != null) {
 						spssSyntaxString();
-						spssSyntaxTxt.append(XmlBeansUtil
-								.getTextOnMixedElement(labelType));
+						spssSyntaxTxt.append(removeNewLines(XmlBeansUtil
+								.getTextOnMixedElement(labelType)));
 						spssSyntaxString();
 						addSpssSyntax(variableLabels);
 					}
@@ -436,7 +445,7 @@ public class SpssExportRunnable implements Runnable {
 										.getDefaultLangElement(cat
 												.getLabelList())));
 						// cat text
-						spssValueLabelCategory(text);
+						spssValueLabelCategory(removeNewLines(text));
 						break;
 					}
 				}
@@ -458,7 +467,7 @@ public class SpssExportRunnable implements Runnable {
 										.getDefaultLangElement(result.get(0)
 												.getLabelList()));
 						// cat text
-						spssValueLabelCategory(text);
+						spssValueLabelCategory(removeNewLines(text));
 					}
 				} else {
 					throw new DDIFtpException(
@@ -521,33 +530,56 @@ public class SpssExportRunnable implements Runnable {
 
 			boolean found = false;
 			tmpSpssSyntax.append(missing);
-			for (int i = 0; i < unknown.length; i++) {
-				if (missingInt == unknown[i]) {
-					spssValueLabelCategory(tmpSpssSyntax, missingValueLabels[0]);
+
+			// unknown
+			Matcher m = unknownPattern.matcher(tmpMissingTxt.trim());
+			if (m.matches()) {
+				spssValueLabelCategory(tmpSpssSyntax, missingValueLabels[0]);
+				found = true;
+			}
+			// comment out 20140103
+			// for (int i = 0; i < unknown.length; i++) {
+			// if (missingInt == unknown[i]) {
+			// spssValueLabelCategory(tmpSpssSyntax, missingValueLabels[0]);
+			// found = true;
+			// break;
+			// }
+			// }
+			// irrelevant
+			if (!found) {
+				m = irrelevantPattern.matcher(tmpMissingTxt.trim());
+				if (m.matches()) {
+					spssValueLabelCategory(tmpSpssSyntax, missingValueLabels[1]);
 					found = true;
-					break;
 				}
+				// comment out 20140103
+				// for (int i = 0; i < irrelevant.length; i++) {
+				// if (missingInt == irrelevant[i]) {
+				// spssValueLabelCategory(tmpSpssSyntax,
+				// missingValueLabels[1]);
+				// found = true;
+				// break;
+				// }
+				// }
 			}
+			// didnotparticipate
 			if (!found) {
-				for (int i = 0; i < irrelevant.length; i++) {
-					if (missingInt == irrelevant[i]) {
-						spssValueLabelCategory(tmpSpssSyntax,
-								missingValueLabels[1]);
-						found = true;
-						break;
-					}
+				m = didnotparticipatePattern.matcher(tmpMissingTxt.trim());
+				if (m.matches()) {
+					spssValueLabelCategory(tmpSpssSyntax, missingValueLabels[1]);
+					found = true;
 				}
+				// comment out 20140103
+				// for (int i = 0; i < didnotparticipate.length; i++) {
+				// if (missingInt == didnotparticipate[i]) {
+				// spssValueLabelCategory(tmpSpssSyntax,
+				// missingValueLabels[2]);
+				// found = true;
+				// break;
+				// }
+				// }
 			}
-			if (!found) {
-				for (int i = 0; i < didnotparticipate.length; i++) {
-					if (missingInt == didnotparticipate[i]) {
-						spssValueLabelCategory(tmpSpssSyntax,
-								missingValueLabels[2]);
-						found = true;
-						break;
-					}
-				}
-			}
+
 			if (!found) {
 				throw new DDIFtpException(Translator.trans(
 						"spss.export.missingcodenotfound", new String[] {
@@ -588,6 +620,10 @@ public class SpssExportRunnable implements Runnable {
 
 	void clearStringBuffer(StringBuffer buf) {
 		buf.delete(0, buf.length());
+	}
+
+	String removeNewLines(String text) {
+		return text;
 	}
 
 	/**
