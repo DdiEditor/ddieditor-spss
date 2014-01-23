@@ -64,8 +64,8 @@ public class ImportSpssWizard extends Wizard {
 
 	public boolean createCategories = false;
 	public boolean createMeasure = false;
-	public boolean validateLabel = false;
-	public boolean correctReportLabelError = false;
+	public boolean validateEncoding = false;
+	public boolean correctEncodingError = false;
 
 	// variablerec
 	public boolean variableRec = false;
@@ -270,13 +270,13 @@ public class ImportSpssWizard extends Wizard {
 					});
 
 			// encoding validation
-			Button labelValidationButton = editor.createCheckBox(group, "",
+			Button encodingValidationButton = editor.createCheckBox(group, "",
 					Translator.trans("spss.ddipage.validateencoding"));
-			labelValidationButton
+			encodingValidationButton
 					.addSelectionListener(new SelectionListener() {
 						@Override
 						public void widgetSelected(SelectionEvent e) {
-							validateLabel = ((Button) e.widget)
+							validateEncoding = ((Button) e.widget)
 									.getSelection();
 						}
 
@@ -285,14 +285,14 @@ public class ImportSpssWizard extends Wizard {
 							// do nothing
 						}
 					});
-			// correct/report encoding error
-			Button CorrectReportLabelErrorButton = editor.createCheckBox(group, "",
-					Translator.trans("spss.ddipage.correctreportencodingerror"));
-			CorrectReportLabelErrorButton
+			// correct encoding error
+			Button CorrectEncodingErrorButton = editor.createCheckBox(group, "",
+					Translator.trans("spss.ddipage.correctencodingerror"));
+			CorrectEncodingErrorButton
 					.addSelectionListener(new SelectionListener() {
 						@Override
 						public void widgetSelected(SelectionEvent e) {
-							correctReportLabelError = ((Button) e.widget)
+							correctEncodingError = ((Button) e.widget)
 									.getSelection();
 						}
 
@@ -301,9 +301,9 @@ public class ImportSpssWizard extends Wizard {
 							// do nothing
 						}
 					});
-			CorrectReportLabelErrorButton.setSelection(true);
-			correctReportLabelError = true;
-			CorrectReportLabelErrorButton.setEnabled(true);
+			CorrectEncodingErrorButton.setSelection(true);
+			correctEncodingError = true;
+			CorrectEncodingErrorButton.setEnabled(true);
 
 			// loaded resources
 			try {

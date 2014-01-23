@@ -174,7 +174,7 @@ public class SPSSDataRecord {
                         	// commet out 20111020, reason on import more than once exception thrown on same data file!
                         	
                             //throw new SPSSFileException("Error reading data: unexpected compression code for string variable"); 
-                        	System.out.println(var.variableName+" - "+var.type);
+                        	//System.out.println(var.variableName+" - "+var.type);
                         }
                         break;
                     }
@@ -213,10 +213,10 @@ public class SPSSDataRecord {
             }
             else { // STRING
                 strVar = (SPSSStringVariable) var;
-				byte[] bt = strData.toByteArray();
 				String str = new String(strData.toByteArray(),
 						Charset.forName(DdiEditorConfig
 								.get(DdiEditorConfig.SPSS_IMPORT_CHARSET)));
+
 				// If all the blocks where blank (254), make it an empty string
 				if (str.trim().length() == 0) {
 					str = "";
@@ -224,11 +224,15 @@ public class SPSSDataRecord {
 					// right trim only
 					str = str.replaceAll("\\s+$", "");
 				}
-                if(fromDisk) strVar.value = str;
+                if(fromDisk) {
+                	strVar.value = str;
+//                	strVar.byteA = strData.toString("UTF-8").trim().getBytes();
+                	strVar.byteA = strData.toByteArray();
+                }
                 else {
                     strVar.data.add("");
                     dataIndex = strVar.data.size()-1;
-                    strVar.data.set(dataIndex,str); 
+                    strVar.data.set(dataIndex,str);
                 }
                 strData.reset();
                 //file.log("chars "+charactersToRead+" blocks "+blocksToRead);

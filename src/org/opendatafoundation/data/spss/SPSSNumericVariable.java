@@ -63,9 +63,9 @@ public class SPSSNumericVariable extends SPSSVariable {
 	/**
 	 * Class constructor
 	 */
-	public SPSSNumericVariable(SPSSFile file, boolean validateLabel,
-			boolean replaceAndReport, List<ValidationReportElement> reportList) {
-		super(file, validateLabel, replaceAndReport, reportList);
+	public SPSSNumericVariable(SPSSFile file, boolean validateEncoding,
+			boolean correctEncoding, List<ValidationReportElement> reportList) {
+		super(file, validateEncoding, correctEncoding, reportList);
 		data = new ArrayList<Double>();
 		type = VariableType.NUMERIC;
 	}
@@ -558,5 +558,12 @@ public class SPSSNumericVariable extends SPSSVariable {
 			}
 		}
 		return (strValue);
+	}
+
+	@Override
+	public byte[] getValueAsByteArray(int recordNumber,
+			FileFormatInfo dataFormat) throws SPSSFileException {
+		return getValueAsString(0, dataFormat).replaceAll("\\s+", "")
+				.getBytes();
 	}
 }

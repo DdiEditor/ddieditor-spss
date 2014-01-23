@@ -31,6 +31,14 @@ package org.opendatafoundation.data;
 
 import java.io.File;
 import java.io.StringWriter;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.MalformedInputException;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.xml.transform.OutputKeys;
@@ -51,11 +59,23 @@ import org.ddialliance.ddieditor.util.DdiEditorConfig;
 import org.ddialliance.ddiftp.util.DDIFtpException;
 import org.ddialliance.ddiftp.util.Translator;
 import org.ddialliance.ddiftp.util.xml.XmlBeansUtil;
+import org.eclipse.core.resources.IMarker;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.opendatafoundation.data.spss.SPSSFile;
 import org.opendatafoundation.data.spss.SPSSFileException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+
+import dk.dda.ddieditor.spss.osgi.Activator;
+import dk.dda.ddieditor.spss.view.ProblemView;
+import dk.dda.ddieditor.spss.view.IdentifierMarkerField;
+import dk.dda.ddieditor.spss.view.StateMarkerField;
+import dk.dda.ddieditor.spss.view.TypeMarkerField;
 
 /**
  * Collection of utility functions
@@ -155,6 +175,52 @@ public class Utils {
 			return (new String(buf) + str);
 		} else
 			return (str);
+	}
+	
+	/**
+	 * Format CSV output for String values
+	 * 
+	 * @param byteValue
+	 * @param dataFormat
+	 * @return
+	 * @throws DDIFtpException 
+	 */
+	public static String formatCsvStringOutput(byte[] byteValue,
+			FileFormatInfo dataFormat) throws DDIFtpException {
+		String strValue = new String(byteValue).trim();
+		return (formatCsvStringOutput(strValue, dataFormat));
+	}
+	
+	/**
+	 * Format CSV output for String values
+	 * 
+	 * @param byteValue
+	 * @param dataFormat
+	 * @return
+	 * @throws DDIFtpException 
+	 */
+	public static String formatCsvStringOutput(String strValue,
+			FileFormatInfo dataFormat) throws DDIFtpException {
+		if (dataFormat.format == FileFormatInfo.Format.ASCII) {
+			if (dataFormat.asciiFormat == FileFormatInfo.ASCIIFormat.FIXED) { // padding
+				// strValue += Utils.leftPad("", fixedLength -
+				// strValue.length());
+				throw new DDIFtpException("Fixed Ascii format not support");
+			} else if (dataFormat.asciiFormat == FileFormatInfo.ASCIIFormat.CSV) {
+				// see http://en.wikipedia.org/wiki/Comma-separated_values
+				// double the double-quote
+				if (strValue.contains("\"")) {
+					strValue = strValue.replaceAll("\"", "\"\"");
+				}
+				// surround by double-quote if contains comma, double-quote,
+				// line break
+				if (strValue.contains(",") || strValue.contains("\"")
+						|| strValue.contains("\n")) {
+					strValue = "\"" + strValue + "\"";
+				}
+			}
+		}
+		return strValue;
 	}
 
 	/**
@@ -299,50 +365,198 @@ public class Utils {
 		}
 		return agency;
 	}
-	
+
 	/**
-	 * Check label for non printable characters
-	 * 
-	 * @param string
-	 * @throws SPSSFileException 
+	 * Report non printable characters:
+	 * - add error report to reportList
+	 * - add error marker to Problem View 
+	 * @param corrected
+	 * @param input
+	 * @param b
+	 * @param id
+	 * @param type
+	 * @param reportList
+	 * @throws DDIFtpException
 	 */
-	public static String validateLabel(boolean validateLabel,
-			boolean replaceAndReport, String string, String id,
+	private static void reportNonPrintableError(boolean corrected, byte[] input, byte b,
+			String id, String type, List<ValidationReportElement> reportList)
+			throws DDIFtpException {
+		if (reportList != null) {
+			reportList.add(new ValidationReportElement(id, type, Translator
+					.trans("spss.error.nonprintchar1", new Object[] { b })));
+		}
+
+		createMarker(corrected, type, id, "Non printable character '" + b
+				+ "' replaced by white space in <" + new String(input) + ">");
+	}
+
+	/**
+	 * Replace non printable characters - if requested
+	 * @param correctError
+	 * @param bytes
+	 * @param id
+	 * @param type
+	 * @param reportList
+	 * @return
+	 * @throws DDIFtpException
+	 */
+	private static byte[] replaceNonPrintableBytes(boolean correctError,
+			byte[] bytes, String id, String type,
 			List<ValidationReportElement> reportList) throws DDIFtpException {
-		if (validateLabel) {
+		for (int i = 0; i < bytes.length; i++) {
+			// check single byte
 			// check for non printable characters
-			char[] charArray = new char[string.length()];
-			string.getChars(0, string.length(), charArray, 0);
-			for (int j = 0; j < string.length(); j++) {
-				char ch = charArray[j];
-				if (ch < ' ') {
-					// non printable character
-					if (replaceAndReport) {
-						charArray[j] = ' ';
-						try {
-							if (reportList != null) {
-								reportList.add(new ValidationReportElement(
-										id, ElementType.getElementType(
-												"Variable").getElementName(),
-										Translator.trans(
-												"spss.error.nonprintchar1",
-												new Object[] { ch })));
-							}
-						} catch (DDIFtpException e) {
-							// do nothing
-						}
-					} else {
-						throw new DDIFtpException(Translator.trans(
-								"spss.error.nonprintchar", new Object[] { id,
-										ch }));
-					}
-					if (replaceAndReport) {
-						string = new String(charArray);
-					}
+			if ((bytes[i] > 0 && bytes[i] < ' ') || bytes[i] == '\n'
+					|| bytes[i] == '\r' || bytes[i] == 127 /* DEL */) {
+				// replace with white space
+				// report replacement
+				reportNonPrintableError(correctError, bytes, bytes[i], id, type, reportList);
+				if (correctError) {
+					bytes[i] = ' ';
 				}
 			}
 		}
+		return bytes;
+	}
+
+	/**
+	 * Report UTF -8 error:
+	 * - add error report to reportList
+	 * - add error marker to Problem View 
+	 * 
+	 * @param corrected
+	 * @param input
+	 * @param b
+	 * @param type
+	 * @param id
+	 * @param reportList
+	 * @throws DDIFtpException
+	 */
+	private static void reportUtf8Error(boolean corrected, byte[] input, byte b, String type,
+			String id, List<ValidationReportElement> reportList)
+			throws DDIFtpException {
+		if (reportList != null) {
+			reportList.add(new ValidationReportElement(id, type, Translator
+					.trans("spss.error.utf8error", new Object[] { b })));
+		}
+
+		createMarker(corrected, type, id, "Invalid UTF-8 character '" + b
+				+ "' in  <" + new String(input) + ">");
+	}
+
+	/**
+	 * Check input for invalid UTF-8 and non printable characters. If error
+	 * detected marker is generated. If requested the error is corrected.
+	 * 
+	 * @param correctError
+	 * @param input
+	 * @param id
+	 * @param type
+	 * @throws DDIFtpException
+	 */
+	public static byte[] checkUTF8NonPrintable(boolean correctError,
+			byte[] input, String id, String type,
+			List<ValidationReportElement> reportList) throws DDIFtpException {
+		// test - invalid:
+		// byte[] input = { (byte) 0xc3, (byte) 0x50, (byte) 0x41, (byte) 0x42 };
+
+		input = replaceNonPrintableBytes(correctError, input, id, type, reportList);
+
+		CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder();
+		ByteBuffer buf = ByteBuffer.wrap(input);
+
+		try {
+			decoder.decode(buf);
+		} catch (CharacterCodingException e) {
+			for (int i = 0; i < input.length; i++) {
+				try {
+					// check for utf-8 errors
+					decoder.decode(ByteBuffer.wrap(input, i, 1));
+				} catch (CharacterCodingException e1) {
+					try {
+						// if not last byte
+						if (i + 1 < input.length) {
+							// - check multiple byte
+							decoder.decode(ByteBuffer.wrap(input, i, 2));
+							i++;
+						} else {
+							reportUtf8Error(correctError, input, input[i], type, id,
+									reportList);
+							if (correctError) {
+								// replace with white space
+								input[i] = ' ';
+							}
+						}
+					} catch (CharacterCodingException e2) {
+						reportUtf8Error(correctError, input, input[i], type, id, reportList);
+						if (correctError) {
+							// replace with white space
+							input[i] = ' ';
+						}
+					}
+					continue;
+				}
+			}
+		}
+		return input;
+	}
+
+	/**
+	 * Check label for UTF-8 error and non printable characters
+	 * 
+	 * @param string
+	 * @throws SPSSFileException
+	 */
+	public static String validateLabel(boolean validateString,
+			boolean correctString, String string, String id,
+			List<ValidationReportElement> reportList) throws DDIFtpException {
+		if (string.length() > 0 && validateString) {
+			// check for invalid UTF-8 and non printable characters
+			checkUTF8NonPrintable(correctString, string.getBytes(), id,
+					ElementType.getElementType("Variable").getElementName()
+							+ " - Label", reportList);
+		}
 		return string;
+	}
+
+	public static void createMarker(boolean corrected, String elementName,
+			String identifier, String msg) throws DDIFtpException {
+		try {
+			IWorkspace workspace = ResourcesPlugin.getWorkspace();
+			IResource resource = workspace.getRoot();
+
+			IMarker marker = (IMarker) resource
+					.createMarker(ProblemView.MARKER_ID);
+			if (corrected) {
+				marker.setAttribute(StateMarkerField.DDI_STATE, "Corrected");
+			} else {
+				marker.setAttribute(StateMarkerField.DDI_STATE, "Error");
+			}
+			if (elementName != null) {
+				marker.setAttribute(TypeMarkerField.DDI_TYPE, elementName);
+			}
+			if (identifier != null) {
+				marker.setAttribute(IdentifierMarkerField.DDI_REFERENCE,
+						identifier);
+			}
+			marker.setAttribute(IMarker.SOURCE_ID, Activator.PLUGIN_ID);
+			marker.setAttribute(IMarker.MESSAGE, msg);
+		} catch (CoreException e) {
+			throw new DDIFtpException(e.getMessage(), e);
+		}
+	}
+
+	public static void cleanMarkers() throws Exception {
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		IMarker[] markers = root.findMarkers(ProblemView.MARKER_ID, false,
+				IResource.DEPTH_ZERO);
+		for (int i = 0; i < markers.length; i++) {
+			String message = (String) markers[i]
+					.getAttribute(IMarker.SOURCE_ID);
+			if (message != null && message.equals(Activator.PLUGIN_ID)) {
+				markers[i].delete();
+			}
+		}
 	}
 
 }

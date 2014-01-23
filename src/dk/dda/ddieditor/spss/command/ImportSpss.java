@@ -157,12 +157,15 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 				//
 				if (importSpssWizard.variable) {
 					List<ValidationReportElement> reportList = new ArrayList<ValidationReportElement>();
-					spssFile.loadMetadata(importSpssWizard.validateLabel, importSpssWizard.correctReportLabelError, reportList);
+					Utils.cleanMarkers();
+					spssFile.loadMetadata(importSpssWizard.validateEncoding,
+							importSpssWizard.correctEncodingError,
+							reportList);
 					StringBuilder mess = new StringBuilder();
 					for (ValidationReportElement validationReportElement : reportList) {
-						mess.append("\n" + validationReportElement.getId() + "\t"
-								+ validationReportElement.getType() + "\t"
-								+ validationReportElement.getDescr());
+						mess.append("\n" + validationReportElement.getId()
+								+ "\t" + validationReportElement.getType()
+								+ "\t" + validationReportElement.getDescr());
 					}
 					if (mess.length() > 0) {
 						MessageDialog.openError(PlatformUI.getWorkbench()
@@ -170,8 +173,8 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 								Translator.trans("spss.error.title"),
 								mess.toString());
 					}
-					
-					// 
+
+					//
 					ExportOptions exportOptions = new ExportOptions();
 					exportOptions.createCategories = importSpssWizard.createCategories;
 					exportOptions.createMeasure = importSpssWizard.createMeasure;
@@ -294,8 +297,11 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 					// create dat file - dat file location
 					String fileName = studyUnitLight.getId() + ".csv";
 
-					spssFile.exportData(new File(importSpssWizard.dataFile
-							+ "/" + fileName), fileFormatInfo);
+					spssFile.exportData(
+							importSpssWizard.validateEncoding,
+							importSpssWizard.correctEncodingError,
+							new File(importSpssWizard.dataFile + "/" + fileName),
+							fileFormatInfo);
 
 					// create meta data
 					dom = spssFile.getDDI3PhysicalInstance(new URI(fileName),

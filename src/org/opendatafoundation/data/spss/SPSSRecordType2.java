@@ -63,8 +63,8 @@ public class SPSSRecordType2 extends SPSSAbstractRecordType {
 	String label;
 	// double missingValue2[] = new double[3];
 	byte missingValue[][] = new byte[3][8];
-	boolean validateLabel;
-	boolean replaceAndReport;
+	boolean validateEncoding;
+	boolean correctEncoding;
 	List<ValidationReportElement> reportList;
 
 	/* The value label set associated with this variableRecord */
@@ -78,10 +78,10 @@ public class SPSSRecordType2 extends SPSSAbstractRecordType {
 	 * 								if false: throw exception if non printable characters found
 	 * @param reportList
 	 */
-	public SPSSRecordType2(boolean validateLabel, boolean replaceAndReport, List<ValidationReportElement> reportList) {
+	public SPSSRecordType2(boolean validateEncoding, boolean correctEncoding, List<ValidationReportElement> reportList) {
 		this.reportList = reportList;
-		this.validateLabel = validateLabel;
-		this.replaceAndReport = replaceAndReport;
+		this.validateEncoding = validateEncoding;
+		this.correctEncoding = correctEncoding;
 	}
 
 	/**
@@ -358,13 +358,13 @@ public class SPSSRecordType2 extends SPSSAbstractRecordType {
 		// name
 		name = is.readSPSSString(8).replaceAll("\\s+$", "");
 		try {
-			name = Utils.validateLabel(validateLabel, replaceAndReport, name,
+			name = Utils.validateLabel(validateEncoding, correctEncoding, name,
 					name, reportList);
 			// label
 			if (hasLabel == 1) {
 				labelLength = is.readSPSSInt();
 				label = is.readSPSSString(labelLength);
-				label = Utils.validateLabel(validateLabel, replaceAndReport,
+				label = Utils.validateLabel(validateEncoding, correctEncoding,
 						label, name, reportList);
 				// variableRecord labels are stored in chunks of 4-bytes
 				// --> we need to skip unused bytes in the last chunk

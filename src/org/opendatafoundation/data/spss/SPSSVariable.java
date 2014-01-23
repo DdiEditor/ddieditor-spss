@@ -61,8 +61,8 @@ public abstract class SPSSVariable {
 												// record holding this variable
 												// value labels
 	
-	boolean validateLabel;
-	boolean replaceAndReport;
+	boolean validateEncoding;
+	boolean correctEncoding;
 	List<ValidationReportElement> reportList = null;
 
 	static enum VariableType {
@@ -134,11 +134,11 @@ public abstract class SPSSVariable {
 	 * @param file
 	 *            the SPSSFile this variable belongs to
 	 */
-	public SPSSVariable(SPSSFile file, boolean validateLabel,
-			boolean replaceAndReport, List<ValidationReportElement> reportList) {
+	public SPSSVariable(SPSSFile file, boolean validateEncoding,
+			boolean correctEncoding, List<ValidationReportElement> reportList) {
 		this.spssFile = file;
-		this.validateLabel = validateLabel;
-		this.replaceAndReport = replaceAndReport;
+		this.validateEncoding = validateEncoding;
+		this.correctEncoding = correctEncoding;
 		this.reportList = reportList;
 	}
 
@@ -406,7 +406,7 @@ public abstract class SPSSVariable {
 					// category label
 					elem = (Element) category.appendChild(doc.createElementNS(
 							SPSSFile.DDI3_REUSABLE_NAMESPACE, "Label"));
-					String label = Utils.validateLabel(validateLabel, replaceAndReport, cat.label, id, reportList);
+					String label = Utils.validateLabel(validateEncoding, correctEncoding, cat.label, id, reportList);
 					elem.setTextContent(label);
 					schemeLabelStrB.append(label);
 					if (catIterator.hasNext()) {
@@ -1110,6 +1110,9 @@ public abstract class SPSSVariable {
 	 */
 
 	public abstract String getValueAsString(int recordNumber,
+			FileFormatInfo dataFormat) throws SPSSFileException;
+
+	public abstract byte[] getValueAsByteArray(int recordNumber,
 			FileFormatInfo dataFormat) throws SPSSFileException;
 
 	/**

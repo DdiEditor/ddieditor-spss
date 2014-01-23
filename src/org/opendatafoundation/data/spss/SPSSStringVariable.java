@@ -32,6 +32,7 @@ package org.opendatafoundation.data.spss;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.ddialliance.ddiftp.util.DDIFtpException;
 import org.opendatafoundation.data.FileFormatInfo;
 import org.opendatafoundation.data.Utils;
 import org.opendatafoundation.data.ValidationReportElement;
@@ -46,10 +47,11 @@ public class SPSSStringVariable extends SPSSVariable {
 	public List<String> data;
 	/** a single data value used when reading data from disk */
 	public String value;
+	public byte[] byteA;
 
-	public SPSSStringVariable(SPSSFile file, boolean validateLabel,
+	public SPSSStringVariable(SPSSFile file, boolean validateEncoding,
 			boolean replaceAndReport, List<ValidationReportElement> reportList) {
-		super(file, validateLabel, replaceAndReport, reportList);
+		super(file, validateEncoding, replaceAndReport, reportList);
 		type = VariableType.STRING;
 		data = new ArrayList<String>();
 	}
@@ -116,30 +118,22 @@ public class SPSSStringVariable extends SPSSVariable {
 		if (obsNumber == 0)
 			strValue = this.value;
 		else if (obsNumber > 0 && this.data.size() == 0)
-			throw new SPSSFileException("No data availble");
+			throw new SPSSFileException("No data available");
 		else
 			strValue = data.get(obsNumber - 1);
 
 		// format output
-		if (dataFormat.format == FileFormatInfo.Format.ASCII) {
-			if (dataFormat.asciiFormat == FileFormatInfo.ASCIIFormat.FIXED) { // padding
-				strValue += Utils.leftPad("",
-						this.getLength() - strValue.length());
-			} else if (dataFormat.asciiFormat == FileFormatInfo.ASCIIFormat.CSV) {
-				// see http://en.wikipedia.org/wiki/Comma-separated_values
-				// double the double-quote
-				if (strValue.contains("\"")) {
-					strValue = strValue.replaceAll("\"", "\"\"");
-				}
-				// surround by double-quote if contains comma, double-quote,
-				// line break
-				if (strValue.contains(",") || strValue.contains("\"")
-						|| strValue.contains("\n")) {
-					strValue = "\"" + strValue + "\"";
-				}
-			}
-
+		try {
+			strValue = Utils.formatCsvStringOutput(strValue, dataFormat);
+		} catch (DDIFtpException e) {
+			throw new SPSSFileException(e.getMessage());
 		}
 		return (strValue);
+	}
+
+	@Override
+	public byte[] getValueAsByteArray(int obsNumber, FileFormatInfo dataFormat)
+			throws SPSSFileException {
+		return this.byteA;
 	}
 }
