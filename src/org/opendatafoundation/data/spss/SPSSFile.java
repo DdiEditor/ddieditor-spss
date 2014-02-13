@@ -1733,7 +1733,7 @@ public class SPSSFile extends RandomAccessFile {
 			}
 			byteStringStream.reset();
 		}
-		log("Record2: <"+recordStr+"> <"+dataFormat+">");
+		//log("Record2: <"+recordStr+"> <"+dataFormat+">");
 		return(recordStr);
 	}
 
