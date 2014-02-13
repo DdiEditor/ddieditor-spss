@@ -31,6 +31,7 @@ package org.opendatafoundation.data;
 
 import java.io.File;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -176,28 +177,35 @@ public class Utils {
 		} else
 			return (str);
 	}
-	
+
 	/**
 	 * Format CSV output for String values
 	 * 
 	 * @param byteValue
 	 * @param dataFormat
 	 * @return
-	 * @throws DDIFtpException 
+	 * @throws DDIFtpException
 	 */
 	public static String formatCsvStringOutput(byte[] byteValue,
 			FileFormatInfo dataFormat) throws DDIFtpException {
-		String strValue = new String(byteValue).trim();
+		String strValue = null;
+		try {
+			strValue = new String(byteValue,
+					DdiEditorConfig.get(DdiEditorConfig.SPSS_IMPORT_CHARSET))
+					.trim();
+		} catch (UnsupportedEncodingException e) {
+			throw new DDIFtpException(e);
+		}
 		return (formatCsvStringOutput(strValue, dataFormat));
 	}
-	
+
 	/**
 	 * Format CSV output for String values
 	 * 
 	 * @param byteValue
 	 * @param dataFormat
 	 * @return
-	 * @throws DDIFtpException 
+	 * @throws DDIFtpException
 	 */
 	public static String formatCsvStringOutput(String strValue,
 			FileFormatInfo dataFormat) throws DDIFtpException {
@@ -367,9 +375,9 @@ public class Utils {
 	}
 
 	/**
-	 * Report non printable characters:
-	 * - add error report to reportList
-	 * - add error marker to Problem View 
+	 * Report non printable characters: - add error report to reportList - add
+	 * error marker to Problem View
+	 * 
 	 * @param corrected
 	 * @param input
 	 * @param b
@@ -378,9 +386,9 @@ public class Utils {
 	 * @param reportList
 	 * @throws DDIFtpException
 	 */
-	private static void reportNonPrintableError(boolean corrected, byte[] input, byte b,
-			String id, String type, List<ValidationReportElement> reportList)
-			throws DDIFtpException {
+	private static void reportNonPrintableError(boolean corrected,
+			byte[] input, byte b, String id, String type,
+			List<ValidationReportElement> reportList) throws DDIFtpException {
 		if (reportList != null) {
 			reportList.add(new ValidationReportElement(id, type, Translator
 					.trans("spss.error.nonprintchar1", new Object[] { b })));
@@ -392,6 +400,7 @@ public class Utils {
 
 	/**
 	 * Replace non printable characters - if requested
+	 * 
 	 * @param correctError
 	 * @param bytes
 	 * @param id
@@ -410,7 +419,8 @@ public class Utils {
 					|| bytes[i] == '\r' || bytes[i] == 127 /* DEL */) {
 				// replace with white space
 				// report replacement
-				reportNonPrintableError(correctError, bytes, bytes[i], id, type, reportList);
+				reportNonPrintableError(correctError, bytes, bytes[i], id,
+						type, reportList);
 				if (correctError) {
 					bytes[i] = ' ';
 				}
@@ -420,9 +430,8 @@ public class Utils {
 	}
 
 	/**
-	 * Report UTF -8 error:
-	 * - add error report to reportList
-	 * - add error marker to Problem View 
+	 * Report UTF -8 error: - add error report to reportList - add error marker
+	 * to Problem View
 	 * 
 	 * @param corrected
 	 * @param input
@@ -432,9 +441,9 @@ public class Utils {
 	 * @param reportList
 	 * @throws DDIFtpException
 	 */
-	private static void reportUtf8Error(boolean corrected, byte[] input, byte b, String type,
-			String id, List<ValidationReportElement> reportList)
-			throws DDIFtpException {
+	private static void reportUtf8Error(boolean corrected, byte[] input,
+			byte b, String type, String id,
+			List<ValidationReportElement> reportList) throws DDIFtpException {
 		if (reportList != null) {
 			reportList.add(new ValidationReportElement(id, type, Translator
 					.trans("spss.error.utf8error", new Object[] { b })));
@@ -458,9 +467,11 @@ public class Utils {
 			byte[] input, String id, String type,
 			List<ValidationReportElement> reportList) throws DDIFtpException {
 		// test - invalid:
-		// byte[] input = { (byte) 0xc3, (byte) 0x50, (byte) 0x41, (byte) 0x42 };
+		// byte[] input = { (byte) 0xc3, (byte) 0x50, (byte) 0x41, (byte) 0x42
+		// };
 
-		input = replaceNonPrintableBytes(correctError, input, id, type, reportList);
+		input = replaceNonPrintableBytes(correctError, input, id, type,
+				reportList);
 
 		CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder();
 		ByteBuffer buf = ByteBuffer.wrap(input);
@@ -480,15 +491,16 @@ public class Utils {
 							decoder.decode(ByteBuffer.wrap(input, i, 2));
 							i++;
 						} else {
-							reportUtf8Error(correctError, input, input[i], type, id,
-									reportList);
+							reportUtf8Error(correctError, input, input[i],
+									type, id, reportList);
 							if (correctError) {
 								// replace with white space
 								input[i] = ' ';
 							}
 						}
 					} catch (CharacterCodingException e2) {
-						reportUtf8Error(correctError, input, input[i], type, id, reportList);
+						reportUtf8Error(correctError, input, input[i], type,
+								id, reportList);
 						if (correctError) {
 							// replace with white space
 							input[i] = ' ';
