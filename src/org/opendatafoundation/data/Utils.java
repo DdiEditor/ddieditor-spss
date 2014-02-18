@@ -521,12 +521,11 @@ public class Utils {
 	 */
 	public static String validateLabel(boolean validateString,
 			boolean correctString, String string, String id,
-			List<ValidationReportElement> reportList) throws DDIFtpException {
+			List<ValidationReportElement> reportList, String type) throws DDIFtpException {
 		if (string.length() > 0 && validateString) {
 			// check for invalid UTF-8 and non printable characters
-			checkUTF8NonPrintable(correctString, string.getBytes(), id,
-					ElementType.getElementType("Variable").getElementName()
-							+ " - Label", reportList);
+			checkUTF8NonPrintable(correctString, string.getBytes(), id, type,
+					reportList);
 		}
 		return string;
 	}

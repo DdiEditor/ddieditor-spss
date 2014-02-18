@@ -406,7 +406,10 @@ public abstract class SPSSVariable {
 					// category label
 					elem = (Element) category.appendChild(doc.createElementNS(
 							SPSSFile.DDI3_REUSABLE_NAMESPACE, "Label"));
-					String label = Utils.validateLabel(validateEncoding, correctEncoding, cat.label, id, reportList);
+					String label = Utils.validateLabel(validateEncoding,
+							correctEncoding, cat.label, id, reportList,
+							ElementType.getElementType("Category")
+									.getElementName() + " - Label");
 					elem.setTextContent(label);
 					schemeLabelStrB.append(label);
 					if (catIterator.hasNext()) {

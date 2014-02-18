@@ -359,13 +359,16 @@ public class SPSSRecordType2 extends SPSSAbstractRecordType {
 		name = is.readSPSSString(8).replaceAll("\\s+$", "");
 		try {
 			name = Utils.validateLabel(validateEncoding, correctEncoding, name,
-					name, reportList);
+					name, reportList, ElementType.getElementType("Variable")
+							.getElementName() + " - Name");
 			// label
 			if (hasLabel == 1) {
 				labelLength = is.readSPSSInt();
 				label = is.readSPSSString(labelLength);
 				label = Utils.validateLabel(validateEncoding, correctEncoding,
-						label, name, reportList);
+						label, name, reportList,
+						ElementType.getElementType("Variable").getElementName()
+								+ " - Label");
 				// variableRecord labels are stored in chunks of 4-bytes
 				// --> we need to skip unused bytes in the last chunk
 				if ((labelLength % 4) != 0)
