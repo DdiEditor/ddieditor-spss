@@ -69,6 +69,8 @@ public class SPSSUtils {
 		String str = new String(buffer, Charset.forName(DdiEditorConfig
 				.get(DdiEditorConfig.SPSS_IMPORT_CHARSET)));
 		str.replaceAll("\\s+$", "");
+		System.out.println("*** "+DdiEditorConfig
+				.get(DdiEditorConfig.SPSS_IMPORT_CHARSET)+": "+str);
 		return (str);
 	}
 

@@ -82,6 +82,7 @@ public class SPSSRecordType3 extends SPSSAbstractRecordType {
             if( ((labelLength+1) % 8) != 0) is.skipBytes( 8 - ((labelLength+1) % 8) );
 
             // Store in map
+            System.out.println("*** value: "+value+" label: "+label+" ***"); // dak
             valueLabel.put(value, label);
         }
     }
@@ -99,6 +100,7 @@ public class SPSSRecordType3 extends SPSSAbstractRecordType {
            String label = (String) entry.getValue();
            str += "\n "+SPSSUtils.byte8ToDouble(value)+"="+label;
         }
+        System.out.println(str); // dak
         return(str);
     }
 }
