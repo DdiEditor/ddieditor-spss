@@ -226,7 +226,6 @@ public class SPSSDataRecord {
 				}
                 if(fromDisk) {
                 	strVar.value = str;
-//                	strVar.byteA = strData.toString("UTF-8").trim().getBytes();
                 	strVar.byteA = strData.toByteArray();
                 }
                 else {

@@ -55,6 +55,7 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.ddialliance.ddi3.xml.xmlbeans.reusable.ReferenceType;
+import org.ddialliance.ddieditor.ui.model.DdiModelException;
 import org.ddialliance.ddieditor.ui.model.ElementType;
 import org.ddialliance.ddieditor.util.DdiEditorConfig;
 import org.ddialliance.ddiftp.util.DDIFtpException;
@@ -391,11 +392,15 @@ public class Utils {
 			List<ValidationReportElement> reportList) throws DDIFtpException {
 		if (reportList != null) {
 			reportList.add(new ValidationReportElement(id, type, Translator
-					.trans("spss.error.nonprintchar1", new Object[] { b })));
+					.trans("spss.error.nonprintchar", new Object[] { b })));
 		}
 
-		createMarker(corrected, type, id, "Non printable character '" + b
-				+ "' replaced by white space in <" + new String(input) + ">");
+		createMarker(
+				corrected,
+				type,
+				id,
+				Translator.trans("spss.error.nonprintchar1", new Object[] { b,
+						new String(input) }));
 	}
 
 	/**
@@ -449,8 +454,12 @@ public class Utils {
 					.trans("spss.error.utf8error", new Object[] { b })));
 		}
 
-		createMarker(corrected, type, id, "Invalid UTF-8 character '" + b
-				+ "' in  <" + new String(input) + ">");
+		createMarker(
+				corrected,
+				type,
+				id,
+				Translator.trans("spss.error.utf8error1", new Object[] { b,
+						new String(input) }));
 	}
 
 	/**
@@ -473,7 +482,9 @@ public class Utils {
 		input = replaceNonPrintableBytes(correctError, input, id, type,
 				reportList);
 
-		CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder();
+		CharsetDecoder decoder = Charset.forName(
+				DdiEditorConfig.get(DdiEditorConfig.SPSS_IMPORT_CHARSET))
+				.newDecoder();
 		ByteBuffer buf = ByteBuffer.wrap(input);
 
 		try {
@@ -521,11 +532,18 @@ public class Utils {
 	 */
 	public static String validateLabel(boolean validateString,
 			boolean correctString, String string, String id,
-			List<ValidationReportElement> reportList, String type) throws DDIFtpException {
+			List<ValidationReportElement> reportList, String type)
+			throws DDIFtpException {
 		if (string.length() > 0 && validateString) {
 			// check for invalid UTF-8 and non printable characters
-			checkUTF8NonPrintable(correctString, string.getBytes(), id, type,
-					reportList);
+			try {
+				checkUTF8NonPrintable(correctString,
+						string.getBytes(DdiEditorConfig
+								.get(DdiEditorConfig.SPSS_IMPORT_CHARSET)), id,
+						type, reportList);
+			} catch (UnsupportedEncodingException e) {
+				throw new DDIFtpException(e.getMessage());
+			}
 		}
 		return string;
 	}
