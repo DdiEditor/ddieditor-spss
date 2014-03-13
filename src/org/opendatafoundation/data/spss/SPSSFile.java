@@ -135,6 +135,7 @@ public class SPSSFile extends RandomAccessFile {
 	SPSSRecordType7Subtype11 variableDisplayParamsRecord;
 	SPSSRecordType7Subtype13 longVariableNamesRecord;
 	SPSSRecordType7Subtype14 longStringRecord;
+	// Maps 
 	Map<String, String> longStringRecordMap = new LinkedHashMap<String, String>();
 	Map<String, String> longStringRecordLabelMap = new LinkedHashMap<String, String>();
 
@@ -387,7 +388,7 @@ public class SPSSFile extends RandomAccessFile {
 							// var.variableRecord.label
 							String orgarName = longStringRecordLabelMap
 									.get(var.variableRecord.label);
-							if (!orgarName.equals(var.variableName)) {
+							if (!orgarName.equals(var.variableShortName)) {
 								isLongStringVar = true;
 							}
 						}
@@ -863,6 +864,7 @@ public class SPSSFile extends RandomAccessFile {
 			}
 
 			// Create variable scheme (one for all variables)
+			String longStringShortName = null;
 			Element varScheme = (Element) logicalProduct.appendChild(doc
 					.createElementNS(SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 							"VariableScheme"));
@@ -873,7 +875,6 @@ public class SPSSFile extends RandomAccessFile {
 			varIterator = variableMap.keySet().iterator();
 			while (varIterator.hasNext()) {
 				SPSSVariable var = variableMap.get(varIterator.next());
-
 				boolean checkForLongString = checkForLongString(var);
 				if (checkForLongString) {
 					// reset length to max
@@ -882,11 +883,8 @@ public class SPSSFile extends RandomAccessFile {
 						Node node = nodeList.item(i);
 
 						// locate right variable
-						String varName = "";
 						if (node.getFirstChild().getLocalName()
 								.equals("VariableName")) {
-							varName = node.getFirstChild().getFirstChild()
-									.getNodeValue();
 							for (Entry<String, String> entry : longStringRecordMap
 									.entrySet()) {
 								// System.out.println(varName + " -- "
@@ -894,7 +892,7 @@ public class SPSSFile extends RandomAccessFile {
 
 								// reannotate variable length on long string
 								// variables
-								if (varName.equals(entry.getKey())) {
+								if (longStringShortName.equals(entry.getKey())) {
 									// System.out
 									// .println("selected -- " + varName);
 
@@ -939,6 +937,7 @@ public class SPSSFile extends RandomAccessFile {
 				Element variable = var.createDDI3Variable(doc,
 						exportOptions.createMeasure);
 				varScheme.appendChild(variable);
+				longStringShortName = var.getShortName();
 
 				// System.out.println("name: " + var.getName());
 				// System.out.println("var: " + var.getDDI3DataType());
@@ -965,7 +964,7 @@ public class SPSSFile extends RandomAccessFile {
 
 	private boolean checkForLongString(SPSSVariable var) {
 		String name = longStringRecordLabelMap.get(var.getLabel());
-		if (name != null && !name.equals(var.getName())) {
+		if (name != null && !name.equals(var.getShortName())) {
 			return true;
 		}
 		return false;
@@ -1638,12 +1637,13 @@ public class SPSSFile extends RandomAccessFile {
 
 		// read variables (string or numeric)
 		Iterator<Integer> varIterator = variableMap.keySet().iterator();
+		int nbrVars = variableMap.size();
 		int n = 1;
 		boolean isLongStringVar = false;
 		// for each variable:
 		while (varIterator.hasNext()) {
 			SPSSVariable var = variableMap.get(varIterator.next());
-			//System.out.println("Variable name: "+var.getName()+"("+n+")");
+			//log("Variable name: "+var.getName()+"("+n+")");
 			isLongStringVar = false;
 			
 			// prefix
@@ -1654,15 +1654,19 @@ public class SPSSFile extends RandomAccessFile {
 								.get(var.variableRecord.label) != null) {
 					String orgarName = longStringRecordLabelMap
 							.get(var.variableRecord.label);
-					if (!orgarName.equals(var.variableName)) {
+					if (!orgarName.equals(var.variableShortName)) {
 						isLongStringVar = true;
 					}
 				}
 
+				// TODO what if long string variable is last variable???
+				// if (!isLongStringVar || n == nbrVars) {
 				if (!isLongStringVar) {
 					// numeric or short string
 					if (dataFormat.asciiFormat == FileFormatInfo.ASCIIFormat.DELIMITED) {
-						recordStr += dataFormat.asciiDelimiter;
+						if (n != nbrVars) {
+							recordStr += dataFormat.asciiDelimiter;
+						}
 					} else if (dataFormat.asciiFormat == FileFormatInfo.ASCIIFormat.CSV) {
 						if (byteStringStream.toString().length() > 0) {
 							byte[] bytes = byteStringStream.toByteArray();
@@ -1691,7 +1695,9 @@ public class SPSSFile extends RandomAccessFile {
 							}
 							byteStringStream.reset();
 						}
-						recordStr += ",";
+						if (n != nbrVars) {
+							recordStr += ",";
+						}
 					}
 				}
 			}
@@ -2002,19 +2008,16 @@ public class SPSSFile extends RandomAccessFile {
 					// update variables
 					Iterator<Entry<String, String>> it = longVariableNamesRecord.nameMap
 							.entrySet().iterator();
-					varIndex = 0;
 					while (it.hasNext()) {
 						Entry<String, String> entry = it.next();
-						SPSSVariable var = getVariable(varIndex);
-						// make sure the short name matches and that it's not a
-						// string continuation
-						if (var.variableRecord.variableTypeCode != 0
-								&& var.variableShortName.equals(entry.getKey())) {
-							var.variableName = (String) entry.getValue();
-						} else {
-							// log(var.variableShortName+"!="+entry.getKey());
+						for (SPSSVariable var : variableMap.values()) {
+							if (var.variableRecord.variableTypeCode != 0
+									&& var.variableShortName.equals(entry
+											.getKey())) {
+								var.variableName = (String) entry.getValue();
+								break;
+							}
 						}
-						varIndex++;
 					}
 					break;
 				case 14:
@@ -2024,7 +2027,7 @@ public class SPSSFile extends RandomAccessFile {
 
 					for (String key : longStringRecordMap.keySet()) {
 						for (SPSSVariable var : variableMap.values()) {
-							if (var.variableName.equals(key)) {
+							if (var.variableShortName.equals(key)) {
 								longStringRecordLabelMap.put(var.getLabel(),
 										key);
 							}

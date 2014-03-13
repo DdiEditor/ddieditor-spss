@@ -75,7 +75,7 @@ public class SPSSRecordType7Subtype14 extends SPSSAbstractRecordType {
 		str += "\nRecord Subtype  		: " + recordSubtypeCode;
 		str += "\nCount   		  		: " + count;
 		str += "\nSize            		: " + size;
-		str += "\nVariableName-Length   : ";// + variableNameLengthStr;
+		str += "\nVariableName-Length   : " + variableNameLengthStr;
 		Iterator it = nameMap.entrySet().iterator();
 		while (it.hasNext()) {
 			Map.Entry entry = (Map.Entry) it.next();

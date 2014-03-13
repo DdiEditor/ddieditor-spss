@@ -1103,7 +1103,7 @@ public abstract class SPSSVariable {
 	 * @return A string containing the variable short name (max 8 characters)
 	 */
 	public String getShortName() {
-		return (this.variableName);
+		return (this.variableShortName);
 	}
 
 	/**
