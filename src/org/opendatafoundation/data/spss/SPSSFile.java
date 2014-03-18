@@ -41,7 +41,6 @@ import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -68,6 +67,7 @@ import org.ddialliance.ddieditor.model.lightxmlobject.LightXmlObjectType;
 import org.ddialliance.ddieditor.ui.model.ElementType;
 import org.ddialliance.ddieditor.util.DdiEditorConfig;
 import org.ddialliance.ddiftp.util.DDIFtpException;
+import org.ddialliance.ddiftp.util.Translator;
 import org.opendatafoundation.data.FileFormatInfo;
 import org.opendatafoundation.data.Utils;
 import org.opendatafoundation.data.ValidationReportElement;
@@ -2087,7 +2087,8 @@ public class SPSSFile extends RandomAccessFile {
 							var.variableShortName);
 				} else {
 					try {
-						if (var.getLabel() != null && var.getLabel().length() > 0
+						if (var.getLabel() != null
+								&& var.getLabel().length() > 0
 								&& this.longStringRecordLabelMap.get(var
 										.getLabel()) != null) {
 							// this is a very long string variable record with a
@@ -2098,9 +2099,10 @@ public class SPSSFile extends RandomAccessFile {
 								false,
 								"Variable",
 								var.variableName,
-								"Variable label empty or not unique - also used by: '"
-										+ this.stringVariableLabelMap.get(var
-												.getLabel()) + "'");
+								Translator
+										.trans("spss.error.variable.label.notunique",
+												new Object[] { this.stringVariableLabelMap
+														.get(var.getLabel()) }));
 					} catch (DDIFtpException e) {
 						new SPSSFileException(e.getMessage());
 					}
