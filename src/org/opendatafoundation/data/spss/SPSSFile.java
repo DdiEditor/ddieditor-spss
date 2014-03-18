@@ -135,7 +135,8 @@ public class SPSSFile extends RandomAccessFile {
 	SPSSRecordType7Subtype11 variableDisplayParamsRecord;
 	SPSSRecordType7Subtype13 longVariableNamesRecord;
 	SPSSRecordType7Subtype14 longStringRecord;
-	// Maps 
+	// Maps
+	Map<String, String> stringVariableLabelMap = new LinkedHashMap<String, String>();
 	Map<String, String> longStringRecordMap = new LinkedHashMap<String, String>();
 	Map<String, String> longStringRecordLabelMap = new LinkedHashMap<String, String>();
 
@@ -962,10 +963,18 @@ public class SPSSFile extends RandomAccessFile {
 		return null;
 	}
 
+	/**
+	 * Check if given variable is a long sting variable
+	 * 
+	 * @param var
+	 * @return
+	 */
 	private boolean checkForLongString(SPSSVariable var) {
-		String name = longStringRecordLabelMap.get(var.getLabel());
-		if (name != null && !name.equals(var.getShortName())) {
-			return true;
+		if (var.type == VariableType.STRING) {
+			String name = longStringRecordLabelMap.get(var.getLabel());
+			if (name != null && !name.equals(var.getShortName())) {
+				return true;
+			}
 		}
 		return false;
 	}
@@ -1643,7 +1652,10 @@ public class SPSSFile extends RandomAccessFile {
 		// for each variable:
 		while (varIterator.hasNext()) {
 			SPSSVariable var = variableMap.get(varIterator.next());
-			//log("Variable name: "+var.getName()+"("+n+")");
+			// log("Variable name: "+var.getName()+"("+n+")");
+			if (var.getName().equals("Q33C_12")) {
+				System.out.println("Found!");
+			}
 			isLongStringVar = false;
 			
 			// prefix
@@ -1859,7 +1871,7 @@ public class SPSSFile extends RandomAccessFile {
 				// initialize the variable name
 				var.variableShortName = type2Record.name;
 				var.variableName = type2Record.name;
-
+				
 				// add variableMap to dictionary
 				this.variableMap.put(count, var);
 				var.variableNumber = variableMap.size();
@@ -2059,6 +2071,42 @@ public class SPSSFile extends RandomAccessFile {
 			}
 		} while (recordType != 999);
 		this.isMetadataLoaded = true;
+	}
+
+	/**
+	 * Validate sav-file
+	 */
+	public void validate() {
+		Iterator<Integer> varIterator = variableMap.keySet().iterator();
+		while (varIterator.hasNext()) {
+			SPSSVariable var = variableMap.get(varIterator.next());
+			// validate the variable label
+			if (var.type == VariableType.STRING) {
+				if (this.stringVariableLabelMap.get(var.getLabel()) == null) {
+					this.stringVariableLabelMap.put(var.getLabel(),
+							var.variableShortName);
+				} else {
+					try {
+						if (var.getLabel() != null && var.getLabel().length() > 0
+								&& this.longStringRecordLabelMap.get(var
+										.getLabel()) != null) {
+							// this is a very long string variable record with a
+							// not empty unique label
+							continue;
+						}
+						Utils.createMarker(
+								false,
+								"Variable",
+								var.variableName,
+								"Variable label empty or not unique - also used by: '"
+										+ this.stringVariableLabelMap.get(var
+												.getLabel()) + "'");
+					} catch (DDIFtpException e) {
+						new SPSSFileException(e.getMessage());
+					}
+				}
+			}
+		}
 	}
 
 	/**

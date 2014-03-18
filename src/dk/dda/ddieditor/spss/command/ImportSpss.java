@@ -161,6 +161,7 @@ public class ImportSpss extends org.eclipse.core.commands.AbstractHandler {
 					spssFile.loadMetadata(importSpssWizard.validateEncoding,
 							importSpssWizard.correctEncodingError,
 							reportList);
+					spssFile.validate();
 					StringBuilder mess = new StringBuilder();
 					for (ValidationReportElement validationReportElement : reportList) {
 						mess.append("\n" + validationReportElement.getId()
