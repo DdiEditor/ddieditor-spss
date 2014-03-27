@@ -383,16 +383,6 @@ public class SPSSFile extends RandomAccessFile {
 					isLongStringVar = false;
 					if (n > 1) {
 						SPSSVariable var = variableMap.get(varIterator.next());
-//						if (var.variableRecord != null
-//								&& longStringRecordLabelMap
-//										.get(var.variableRecord.label) != null) {
-//							// var.variableRecord.label
-//							String orgarName = longStringRecordLabelMap
-//									.get(var.variableRecord.label);
-//							if (!orgarName.equals(var.variableShortName)) {
-//								isLongStringVar = true;
-//							}
-//						}
 						isLongStringVar = checkForVeryLongStringExt(var);
 
 						if (!isLongStringVar) {
