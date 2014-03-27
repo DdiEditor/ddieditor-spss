@@ -138,7 +138,7 @@ public class SPSSFile extends RandomAccessFile {
 	// Maps
 	Map<String, String> stringVariableLabelMap = new LinkedHashMap<String, String>();
 	Map<String, String> longStringRecordMap = new LinkedHashMap<String, String>();
-	Map<String, String> longStringRecordLabelMap = new LinkedHashMap<String, String>();
+	Map<String, String> veryLongStringSegmentMap = new LinkedHashMap<String, String>();
 
 	public boolean isMetadataLoaded = false;
 
@@ -383,16 +383,17 @@ public class SPSSFile extends RandomAccessFile {
 					isLongStringVar = false;
 					if (n > 1) {
 						SPSSVariable var = variableMap.get(varIterator.next());
-						if (var.variableRecord != null
-								&& longStringRecordLabelMap
-										.get(var.variableRecord.label) != null) {
-							// var.variableRecord.label
-							String orgarName = longStringRecordLabelMap
-									.get(var.variableRecord.label);
-							if (!orgarName.equals(var.variableShortName)) {
-								isLongStringVar = true;
-							}
-						}
+//						if (var.variableRecord != null
+//								&& longStringRecordLabelMap
+//										.get(var.variableRecord.label) != null) {
+//							// var.variableRecord.label
+//							String orgarName = longStringRecordLabelMap
+//									.get(var.variableRecord.label);
+//							if (!orgarName.equals(var.variableShortName)) {
+//								isLongStringVar = true;
+//							}
+//						}
+						isLongStringVar = checkForVeryLongStringExt(var);
 
 						if (!isLongStringVar) {
 							recordStr += var.getName();
@@ -744,6 +745,7 @@ public class SPSSFile extends RandomAccessFile {
 		DocumentBuilder domBuilder;
 		Document doc;
 		Element elem;
+		Element varScheme;
 		try {
 			domFactory.setNamespaceAware(true);
 			domBuilder = domFactory.newDocumentBuilder();
@@ -839,7 +841,7 @@ public class SPSSFile extends RandomAccessFile {
 			if (exportOptions.createCategories) {
 				while (varIterator.hasNext()) {
 					SPSSVariable var = variableMap.get(varIterator.next());
-					if (checkForLongString(var)) {
+					if (checkForVeryLongStringExt(var)) {
 						continue;
 					}
 					if (var.hasValueLabels()) {
@@ -855,7 +857,7 @@ public class SPSSFile extends RandomAccessFile {
 			varIterator = variableMap.keySet().iterator();
 			while (varIterator.hasNext()) {
 				SPSSVariable var = variableMap.get(varIterator.next());
-				if (checkForLongString(var)) {
+				if (checkForVeryLongStringExt(var)) {
 					continue;
 				}
 				if (var.hasValueLabels()) {
@@ -866,7 +868,7 @@ public class SPSSFile extends RandomAccessFile {
 
 			// Create variable scheme (one for all variables)
 			String longStringShortName = null;
-			Element varScheme = (Element) logicalProduct.appendChild(doc
+			varScheme = (Element) logicalProduct.appendChild(doc
 					.createElementNS(SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
 							"VariableScheme"));
 			Utils.setDDIMaintainableId(varScheme,
@@ -875,63 +877,9 @@ public class SPSSFile extends RandomAccessFile {
 			// add variables
 			varIterator = variableMap.keySet().iterator();
 			while (varIterator.hasNext()) {
+				// for each var
 				SPSSVariable var = variableMap.get(varIterator.next());
-				boolean checkForLongString = checkForLongString(var);
-				if (checkForLongString) {
-					// reset length to max
-					NodeList nodeList = varScheme.getChildNodes();
-					for (int i = 0; i < nodeList.getLength(); i++) {
-						Node node = nodeList.item(i);
-
-						// locate right variable
-						if (node.getFirstChild().getLocalName()
-								.equals("VariableName")) {
-							for (Entry<String, String> entry : longStringRecordMap
-									.entrySet()) {
-								// System.out.println(varName + " -- "
-								// + entry.getKey());
-
-								// reannotate variable length on long string
-								// variables
-								if (longStringShortName.equals(entry.getKey())) {
-									// System.out
-									// .println("selected -- " + varName);
-
-									// navigate to representation
-									for (Node childNode = node.getFirstChild(); childNode != null;) {
-										Node nextChild = childNode
-												.getNextSibling();
-										if (childNode.getLocalName().equals(
-												"Representation")) {
-											if (childNode.getFirstChild() != null
-													&& childNode
-															.getFirstChild()
-															.getLocalName()
-															.equals("TextRepresentation")) {
-												if (childNode
-														.getFirstChild()
-														.getAttributes()
-														.getNamedItem(
-																"maxLength") != null) {
-
-													// set max length
-													String value = entry
-															.getValue();
-													childNode
-															.getFirstChild()
-															.getAttributes()
-															.getNamedItem(
-																	"maxLength")
-															.setNodeValue(value);
-												}
-											}
-										}
-										childNode = nextChild;
-									}
-								}
-							}
-						}
-					}
+				if (checkForVeryLongStringExt(var)) {
 					continue;
 				}
 
@@ -944,12 +892,54 @@ public class SPSSFile extends RandomAccessFile {
 				// System.out.println("var: " + var.getDDI3DataType());
 				// System.out.println("Rep.-type: "
 				// + var.getDDI3RepresentationType());
+				// System.out.println("Maxlength: "+var.getLength());
 			}
 		} catch (ParserConfigurationException e) {
 			throw new SPSSFileException("Error creating DDI Document: "
 					+ e.getMessage());
 		}
+		// try {
+		// System.out.println("doc: "+Utils.nodeToString(doc).toString());
+		// } catch (Exception e) {
+		// // TODO: handle exception
+		// }
+		reannotateMaxLength(varScheme);
 		return (doc);
+	}
+	
+	private void reannotateMaxLength(Element varScheme) {
+		NodeList nodeList = varScheme.getChildNodes();
+		// for each variable node
+		for (int i = 0; i < nodeList.getLength(); i++) {
+			Node node = nodeList.item(i);
+
+			// locate right variable node
+			if (node.getFirstChild().getLocalName().equals("VariableName")) {
+				String name = node.getFirstChild().getTextContent();
+				String value = longStringRecordMap.get(name);
+				if (value != null) {
+					// navigate to representation
+					for (Node childNode = node.getFirstChild(); childNode != null;) {
+						Node nextChild = childNode.getNextSibling();
+						if (childNode.getLocalName().equals("Representation")) {
+							if (childNode.getFirstChild() != null
+									&& childNode.getFirstChild().getLocalName()
+											.equals("TextRepresentation")) {
+								if (childNode.getFirstChild().getAttributes()
+										.getNamedItem("maxLength") != null) {
+
+									// set max length
+									childNode.getFirstChild().getAttributes()
+											.getNamedItem("maxLength")
+											.setNodeValue(value);
+								}
+							}
+						}
+						childNode = nextChild;
+					}
+				}
+			}
+		}
 	}
 
 	private Element lookupLogicalProduct() throws Exception {
@@ -964,19 +954,22 @@ public class SPSSFile extends RandomAccessFile {
 	}
 
 	/**
-	 * Check if given variable is a long sting variable
+	 * Check if given variable is a very long sting extension.
+	 * (extension segments - not a main segment)
 	 * 
 	 * @param var
 	 * @return
 	 */
-	private boolean checkForLongString(SPSSVariable var) {
+	private boolean checkForVeryLongStringExt(SPSSVariable var) {
 		if (var.type == VariableType.STRING) {
-			String name = longStringRecordLabelMap.get(var.getLabel());
-			if (name != null && !name.equals(var.getShortName())) {
+			String mainVeryLongStringSeqment = veryLongStringSegmentMap
+					.get(var.variableShortName);
+			if (mainVeryLongStringSeqment != null
+					&& !mainVeryLongStringSeqment.equals(var.variableShortName)) {
 				return true;
 			}
 		}
-		return false;
+		return false;		
 	}
 
 	/**
@@ -1653,26 +1646,13 @@ public class SPSSFile extends RandomAccessFile {
 		while (varIterator.hasNext()) {
 			SPSSVariable var = variableMap.get(varIterator.next());
 			// log("Variable name: "+var.getName()+"("+n+")");
-			if (var.getName().equals("Q33C_12")) {
-				System.out.println("Found!");
-			}
 			isLongStringVar = false;
 			
 			// prefix
 			if (n > 1) {
 				// fix B
-				if (var.variableRecord != null
-						&& longStringRecordLabelMap
-								.get(var.variableRecord.label) != null) {
-					String orgarName = longStringRecordLabelMap
-							.get(var.variableRecord.label);
-					if (!orgarName.equals(var.variableShortName)) {
-						isLongStringVar = true;
-					}
-				}
-
-				// TODO what if long string variable is last variable???
-				// if (!isLongStringVar || n == nbrVars) {
+				// if this a Very Long String section?
+				isLongStringVar = checkForVeryLongStringExt(var);
 				if (!isLongStringVar) {
 					// numeric or short string
 					if (dataFormat.asciiFormat == FileFormatInfo.ASCIIFormat.DELIMITED) {
@@ -2017,6 +1997,7 @@ public class SPSSFile extends RandomAccessFile {
 					longVariableNamesRecord = new SPSSRecordType7Subtype13();
 					longVariableNamesRecord.read(this);
 					log(longVariableNamesRecord.toString());
+
 					// update variables
 					Iterator<Entry<String, String>> it = longVariableNamesRecord.nameMap
 							.entrySet().iterator();
@@ -2039,8 +2020,10 @@ public class SPSSFile extends RandomAccessFile {
 
 					for (String key : longStringRecordMap.keySet()) {
 						for (SPSSVariable var : variableMap.values()) {
-							if (var.variableShortName.equals(key)) {
-								longStringRecordLabelMap.put(var.getLabel(),
+							if (var.variableShortName.length() >= key.length()
+									&& var.variableShortName.substring(0,
+											key.length()).equals(key)) {
+								veryLongStringSegmentMap.put(var.variableShortName,
 										key);
 							}
 						}
@@ -2077,38 +2060,39 @@ public class SPSSFile extends RandomAccessFile {
 	 * Validate sav-file
 	 */
 	public void validate() {
-		Iterator<Integer> varIterator = variableMap.keySet().iterator();
-		while (varIterator.hasNext()) {
-			SPSSVariable var = variableMap.get(varIterator.next());
-			// validate the variable label
-			if (var.type == VariableType.STRING) {
-				if (this.stringVariableLabelMap.get(var.getLabel()) == null) {
-					this.stringVariableLabelMap.put(var.getLabel(),
-							var.variableShortName);
-				} else {
-					try {
-						if (var.getLabel() != null
-								&& var.getLabel().length() > 0
-								&& this.longStringRecordLabelMap.get(var
-										.getLabel()) != null) {
-							// this is a very long string variable record with a
-							// not empty unique label
-							continue;
-						}
-						Utils.createMarker(
-								false,
-								"Variable",
-								var.variableName,
-								Translator
-										.trans("spss.error.variable.label.notunique",
-												new Object[] { this.stringVariableLabelMap
-														.get(var.getLabel()) }));
-					} catch (DDIFtpException e) {
-						new SPSSFileException(e.getMessage());
-					}
-				}
-			}
-		}
+		// check for unique very long string label
+//		Iterator<Integer> varIterator = variableMap.keySet().iterator();
+//		while (varIterator.hasNext()) {
+//			SPSSVariable var = variableMap.get(varIterator.next());
+//			// validate the variable label
+//			if (var.type == VariableType.STRING) {
+//				if (this.stringVariableLabelMap.get(var.getLabel()) == null) {
+//					this.stringVariableLabelMap.put(var.getLabel(),
+//							var.variableShortName);
+//				} else {
+//					try {
+//						if (var.getLabel() != null
+//								&& var.getLabel().length() > 0
+//								&& this.longStringRecordLabelMap.get(var
+//										.getLabel()) != null) {
+//							// this is a very long string variable record with a
+//							// not empty unique label
+//							continue;
+//						}
+//						Utils.createMarker(
+//								false,
+//								"Variable",
+//								var.variableName,
+//								Translator
+//										.trans("spss.error.variable.label.notunique",
+//												new Object[] { this.stringVariableLabelMap
+//														.get(var.getLabel()) }));
+//					} catch (DDIFtpException e) {
+//						new SPSSFileException(e.getMessage());
+//					}
+//				}
+//			}
+//		}
 	}
 
 	/**
@@ -2211,4 +2195,5 @@ public class SPSSFile extends RandomAccessFile {
 		this.read(buffer);
 		return buffer;
 	}
+	
 }
