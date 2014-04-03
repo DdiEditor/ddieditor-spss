@@ -2015,8 +2015,6 @@ public class SPSSFile extends RandomAccessFile {
 					for (String key : longStringRecordMap.keySet()) {
 						for (SPSSVariable var : variableMap.values()) {
 							if (var.type == VariableType.STRING) {
-								System.out.println("Short Name: "
-										+ var.getShortName()+var.variableRecord.toString());
 								if (longStringRecordMap.get(var.getShortName()) != null) {
 									longStringShortName = var.getShortName();
 									continue; // continue to extension segments
@@ -2031,6 +2029,8 @@ public class SPSSFile extends RandomAccessFile {
 											var.variableShortName,
 											longStringShortName);
 								}
+							} else {
+								longStringShortName = null;
 							}
 						}
 					}
