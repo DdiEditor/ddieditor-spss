@@ -138,7 +138,7 @@ public class SPSSFile extends RandomAccessFile {
 	// Maps
 	Map<String, String> stringVariableLabelMap = new LinkedHashMap<String, String>();
 	Map<String, String> longStringRecordMap = new LinkedHashMap<String, String>();
-	Map<String, String> veryLongStringSegmentMap = new LinkedHashMap<String, String>();
+	Map<String, String> veryLongStringExtensionSegmentMap = new LinkedHashMap<String, String>();
 
 	public boolean isMetadataLoaded = false;
 
@@ -952,7 +952,7 @@ public class SPSSFile extends RandomAccessFile {
 	 */
 	private boolean checkForVeryLongStringExt(SPSSVariable var) {
 		if (var.type == VariableType.STRING) {
-			String mainVeryLongStringSeqment = veryLongStringSegmentMap
+			String mainVeryLongStringSeqment = veryLongStringExtensionSegmentMap
 					.get(var.variableShortName);
 			if (mainVeryLongStringSeqment != null
 					&& !mainVeryLongStringSeqment.equals(var.variableShortName)) {
@@ -1994,6 +1994,9 @@ public class SPSSFile extends RandomAccessFile {
 					while (it.hasNext()) {
 						Entry<String, String> entry = it.next();
 						for (SPSSVariable var : variableMap.values()) {
+							if (var.variableRecord.variableTypeCode == -1) {
+								System.out.println("Found!");
+							}
 							if (var.variableRecord.variableTypeCode != 0
 									&& var.variableShortName.equals(entry
 											.getKey())) {
@@ -2007,14 +2010,27 @@ public class SPSSFile extends RandomAccessFile {
 					longStringRecord = new SPSSRecordType7Subtype14();
 					longStringRecord.read(this);
 					longStringRecordMap.putAll(longStringRecord.nameMap);
+					String longStringShortName = null;
 
 					for (String key : longStringRecordMap.keySet()) {
 						for (SPSSVariable var : variableMap.values()) {
-							if (var.variableShortName.length() >= key.length()
-									&& var.variableShortName.substring(0,
-											key.length()).equals(key)) {
-								veryLongStringSegmentMap.put(var.variableShortName,
-										key);
+							if (var.type == VariableType.STRING) {
+								System.out.println("Short Name: "
+										+ var.getShortName()+var.variableRecord.toString());
+								if (longStringRecordMap.get(var.getShortName()) != null) {
+									longStringShortName = var.getShortName();
+									continue; // continue to extension segments
+								}
+								if (longVariableNamesRecord.nameMap.get(var.getShortName()) != null) {
+									longStringShortName = null;
+									continue;
+								}
+								// extension segment
+								if (longStringShortName != null) {
+									veryLongStringExtensionSegmentMap.put(
+											var.variableShortName,
+											longStringShortName);
+								}
 							}
 						}
 					}
