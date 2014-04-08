@@ -1994,9 +1994,6 @@ public class SPSSFile extends RandomAccessFile {
 					while (it.hasNext()) {
 						Entry<String, String> entry = it.next();
 						for (SPSSVariable var : variableMap.values()) {
-							if (var.variableRecord.variableTypeCode == -1) {
-								System.out.println("Found!");
-							}
 							if (var.variableRecord.variableTypeCode != 0
 									&& var.variableShortName.equals(entry
 											.getKey())) {
