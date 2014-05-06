@@ -1633,9 +1633,9 @@ public class SPSSFile extends RandomAccessFile {
 		int n = 1;
 		boolean isLongStringVar = false;
 		// for each variable:
-		while (varIterator.hasNext()) {
+    		while (varIterator.hasNext()) {
 			SPSSVariable var = variableMap.get(varIterator.next());
-			// log("Variable name: "+var.getName()+"("+n+")");
+			//log("Variable name: "+var.getName()+"("+n+")");
 			isLongStringVar = false;
 			
 			// prefix
@@ -1677,9 +1677,7 @@ public class SPSSFile extends RandomAccessFile {
 							}
 							byteStringStream.reset();
 						}
-						if (n != nbrVars) {
-							recordStr += ",";
-						}
+						recordStr += ",";
 					}
 				}
 			}
