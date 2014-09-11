@@ -84,7 +84,10 @@ import org.w3c.dom.NodeList;
  */
 public class SPSSFile extends RandomAccessFile {
 	// TODO change into properties
-
+	
+	// Missing Value
+	public static final int MAX_MISSING_VALUE_CODE_RANGE = 10;
+	
 	// VERSION
 	public static final int VERSION_MAJOR = 2008;
 	public static final int VERSION_MINOR = 01;
@@ -834,7 +837,7 @@ public class SPSSFile extends RandomAccessFile {
 					if (checkForVeryLongStringExt(var)) {
 						continue;
 					}
-					if (var.hasValueLabels()) {
+					if (var.hasNonMissingValueLabels()) {
 						logicalProduct.appendChild(var
 								.createDDI3CategoryScheme(doc));
 					}
@@ -850,7 +853,7 @@ public class SPSSFile extends RandomAccessFile {
 				if (checkForVeryLongStringExt(var)) {
 					continue;
 				}
-				if (var.hasValueLabels()) {
+				if (var.hasNonMissingValueLabels()) {
 					logicalProduct.appendChild(var.createDDI3CodeScheme(doc,
 							exportOptions.createCategories));
 				}
@@ -878,11 +881,11 @@ public class SPSSFile extends RandomAccessFile {
 				varScheme.appendChild(variable);
 				longStringShortName = var.getShortName();
 
-				// System.out.println("name: " + var.getName());
-				// System.out.println("var: " + var.getDDI3DataType());
-				// System.out.println("Rep.-type: "
-				// + var.getDDI3RepresentationType());
-				// System.out.println("Maxlength: "+var.getLength());
+				 System.out.println("name: " + var.getName());
+				 System.out.println("var: " + var.getDDI3DataType());
+				 System.out.println("Rep.-type: "
+				 + var.getDDI3RepresentationType());
+				 System.out.println("Maxlength: "+var.getLength());
 			}
 		} catch (ParserConfigurationException e) {
 			throw new SPSSFileException("Error creating DDI Document: "
@@ -896,7 +899,7 @@ public class SPSSFile extends RandomAccessFile {
 		reannotateMaxLength(varScheme);
 		return (doc);
 	}
-	
+
 	private void reannotateMaxLength(Element varScheme) {
 		NodeList nodeList = varScheme.getChildNodes();
 		// for each variable node
@@ -944,8 +947,8 @@ public class SPSSFile extends RandomAccessFile {
 	}
 
 	/**
-	 * Check if given variable is a very long sting extension.
-	 * (extension segments - not a main segment)
+	 * Check if given variable is a very long sting extension. (extension
+	 * segments - not a main segment)
 	 * 
 	 * @param var
 	 * @return
@@ -959,7 +962,7 @@ public class SPSSFile extends RandomAccessFile {
 				return true;
 			}
 		}
-		return false;		
+		return false;
 	}
 
 	/**
@@ -1539,10 +1542,11 @@ public class SPSSFile extends RandomAccessFile {
 					SPSSFile.DDI3_PHYSICAL_INSTANCE_NAMESPACE,
 					"OverallRecordCount"));
 			elem.setTextContent("" + this.getRecordCount());
-			
+
 			// Statistics
 			Element statistics = (Element) physicalInstance.appendChild(doc
-					.createElementNS(DDI3_PHYSICAL_INSTANCE_NAMESPACE, "Statistics"));
+					.createElementNS(DDI3_PHYSICAL_INSTANCE_NAMESPACE,
+							"Statistics"));
 
 		} catch (ParserConfigurationException e) {
 			throw new SPSSFileException("Error creating DDI PhysicalInstance: "
@@ -1593,7 +1597,7 @@ public class SPSSFile extends RandomAccessFile {
 		}
 		return (recordStr);
 	}
-	
+
 	/**
 	 * Gets a data record in the specified format. If rewind is false, this
 	 * assumes the file pointer is the correct location
@@ -1606,13 +1610,14 @@ public class SPSSFile extends RandomAccessFile {
 	 * @throws SPSSFileException
 	 * @throws IOException
 	 */
-	public String getRecordFromDisk(boolean validateEncoding, boolean correctEncoding, FileFormatInfo dataFormat, boolean rewind)
+	public String getRecordFromDisk(boolean validateEncoding,
+			boolean correctEncoding, FileFormatInfo dataFormat, boolean rewind)
 			throws SPSSFileException, IOException {
 		if (!isMetadataLoaded)
 			loadMetadata(false, false, null);
 
 		String recordStr = "";
-		ByteArrayOutputStream byteStringStream = new ByteArrayOutputStream( );
+		ByteArrayOutputStream byteStringStream = new ByteArrayOutputStream();
 
 		// read record
 		SPSSDataRecord data = new SPSSDataRecord();
@@ -1633,11 +1638,11 @@ public class SPSSFile extends RandomAccessFile {
 		int n = 1;
 		boolean isLongStringVar = false;
 		// for each variable:
-    		while (varIterator.hasNext()) {
+		while (varIterator.hasNext()) {
 			SPSSVariable var = variableMap.get(varIterator.next());
-			//log("Variable name: "+var.getName()+"("+n+")");
+			// log("Variable name: "+var.getName()+"("+n+")");
 			isLongStringVar = false;
-			
+
 			// prefix
 			if (n > 1) {
 				// fix B
@@ -1671,7 +1676,8 @@ public class SPSSFile extends RandomAccessFile {
 								}
 							}
 							try {
-								recordStr += Utils.formatCsvStringOutput(bytes, dataFormat);
+								recordStr += Utils.formatCsvStringOutput(bytes,
+										dataFormat);
 							} catch (DDIFtpException e) {
 								throw new SPSSFileException(e.getMessage());
 							}
@@ -1685,10 +1691,11 @@ public class SPSSFile extends RandomAccessFile {
 			// value
 			if (var.type == VariableType.NUMERIC) {
 				recordStr += var.getValueAsString(0, dataFormat);
-				//log("recordStr: <" + recordStr + "><" + dataFormat + ">");
+				// log("recordStr: <" + recordStr + "><" + dataFormat + ">");
 			} else {
 				byteStringStream.write(var.getValueAsByteArray(0, dataFormat));
-				//log("byteStringStream: <" + byteStringStream + "><" + dataFormat + ">");
+				// log("byteStringStream: <" + byteStringStream + "><" +
+				// dataFormat + ">");
 			}
 			n++;
 		}
@@ -1696,17 +1703,12 @@ public class SPSSFile extends RandomAccessFile {
 			byte[] bytes = byteStringStream.toByteArray();
 			if (validateEncoding) {
 				try {
-					bytes = Utils.checkUTF8NonPrintable(
-							correctEncoding,
-							bytes,
-							variableMap.get(0).getName(),
-							ElementType.getElementType(
-									"Variable")
+					bytes = Utils.checkUTF8NonPrintable(correctEncoding, bytes,
+							variableMap.get(0).getName(), ElementType
+									.getElementType("Variable")
 									.getElementName()
 									+ " - Data", null /*
-													 * reportList
-													 * is not
-													 * handled
+													 * reportList is not handled
 													 */);
 				} catch (Exception e) {
 					throw new SPSSFileException(e.getMessage());
@@ -1719,8 +1721,8 @@ public class SPSSFile extends RandomAccessFile {
 			}
 			byteStringStream.reset();
 		}
-		//log("Record2: <"+recordStr+"> <"+dataFormat+">");
-		return(recordStr);
+		// log("Record2: <"+recordStr+"> <"+dataFormat+">");
+		return (recordStr);
 	}
 
 	/**
@@ -1785,8 +1787,9 @@ public class SPSSFile extends RandomAccessFile {
 	 * @throws IOException
 	 * @throws SPSSFileException
 	 */
-	public void loadMetadata(boolean validateEncoding, boolean correctEncoding, List<ValidationReportElement> reportList) throws FileNotFoundException, IOException,
-			SPSSFileException {
+	public void loadMetadata(boolean validateEncoding, boolean correctEncoding,
+			List<ValidationReportElement> reportList)
+			throws FileNotFoundException, IOException, SPSSFileException {
 		long filePointer;
 		int recordType;
 
@@ -1813,7 +1816,8 @@ public class SPSSFile extends RandomAccessFile {
 		do {
 			// log("reading variableRecord record "+(i+1)+" of " +
 			// this.info.OBSperObservation);
-			SPSSRecordType2 type2Record = new SPSSRecordType2(validateEncoding, correctEncoding, reportList);
+			SPSSRecordType2 type2Record = new SPSSRecordType2(validateEncoding,
+					correctEncoding, reportList);
 			type2Record.read(this);
 
 			// ignore string continuation records (variableTypeCode = -1)
@@ -1828,9 +1832,11 @@ public class SPSSFile extends RandomAccessFile {
 				SPSSVariable var;
 
 				if (type2Record.variableTypeCode == 0) {
-					var = new SPSSNumericVariable(this, validateEncoding, correctEncoding, reportList);
+					var = new SPSSNumericVariable(this, validateEncoding,
+							correctEncoding, reportList);
 				} else {
-					var = new SPSSStringVariable(this, validateEncoding, correctEncoding, reportList);
+					var = new SPSSStringVariable(this, validateEncoding,
+							correctEncoding, reportList);
 				}
 
 				// saves this record in the variable
@@ -1839,7 +1845,7 @@ public class SPSSFile extends RandomAccessFile {
 				// initialize the variable name
 				var.variableShortName = type2Record.name;
 				var.variableName = type2Record.name;
-				
+
 				// add variableMap to dictionary
 				this.variableMap.put(count, var);
 				var.variableNumber = variableMap.size();
@@ -1865,7 +1871,23 @@ public class SPSSFile extends RandomAccessFile {
 							.byte8ToDouble(type2Record.missingValue[0]);
 					int to = (int) SPSSUtils
 							.byte8ToDouble(type2Record.missingValue[1]);
-					// TODO code loaded here
+					if (to - from > MAX_MISSING_VALUE_CODE_RANGE) {
+						int newTo = from + MAX_MISSING_VALUE_CODE_RANGE;
+						try {
+							Utils.createMarker(
+									true,
+									ElementType.getElementType("Variable")
+											.getElementName(),
+									var.getShortName(),
+									Translator
+											.trans("spss.error.variable.missingvaluerange",
+													new Object[] { from, to,
+															from, newTo }));
+						} catch (DDIFtpException e) {
+							throw new SPSSFileException(e.getMessage());
+						}
+						to = newTo;
+					}
 					for (int j = from; j <= to; j++) {
 						SPSSVariableCategory cat = ((SPSSNumericVariable) var)
 								.addCategory(true, (double) j, "");
@@ -2014,7 +2036,8 @@ public class SPSSFile extends RandomAccessFile {
 									longStringShortName = var.getShortName();
 									continue; // continue to extension segments
 								}
-								if (longVariableNamesRecord.nameMap.get(var.getShortName()) != null) {
+								if (longVariableNamesRecord.nameMap.get(var
+										.getShortName()) != null) {
 									longStringShortName = null;
 									continue;
 								}
@@ -2062,38 +2085,38 @@ public class SPSSFile extends RandomAccessFile {
 	 */
 	public void validate() {
 		// check for unique very long string label
-//		Iterator<Integer> varIterator = variableMap.keySet().iterator();
-//		while (varIterator.hasNext()) {
-//			SPSSVariable var = variableMap.get(varIterator.next());
-//			// validate the variable label
-//			if (var.type == VariableType.STRING) {
-//				if (this.stringVariableLabelMap.get(var.getLabel()) == null) {
-//					this.stringVariableLabelMap.put(var.getLabel(),
-//							var.variableShortName);
-//				} else {
-//					try {
-//						if (var.getLabel() != null
-//								&& var.getLabel().length() > 0
-//								&& this.longStringRecordLabelMap.get(var
-//										.getLabel()) != null) {
-//							// this is a very long string variable record with a
-//							// not empty unique label
-//							continue;
-//						}
-//						Utils.createMarker(
-//								false,
-//								"Variable",
-//								var.variableName,
-//								Translator
-//										.trans("spss.error.variable.label.notunique",
-//												new Object[] { this.stringVariableLabelMap
-//														.get(var.getLabel()) }));
-//					} catch (DDIFtpException e) {
-//						new SPSSFileException(e.getMessage());
-//					}
-//				}
-//			}
-//		}
+		// Iterator<Integer> varIterator = variableMap.keySet().iterator();
+		// while (varIterator.hasNext()) {
+		// SPSSVariable var = variableMap.get(varIterator.next());
+		// // validate the variable label
+		// if (var.type == VariableType.STRING) {
+		// if (this.stringVariableLabelMap.get(var.getLabel()) == null) {
+		// this.stringVariableLabelMap.put(var.getLabel(),
+		// var.variableShortName);
+		// } else {
+		// try {
+		// if (var.getLabel() != null
+		// && var.getLabel().length() > 0
+		// && this.longStringRecordLabelMap.get(var
+		// .getLabel()) != null) {
+		// // this is a very long string variable record with a
+		// // not empty unique label
+		// continue;
+		// }
+		// Utils.createMarker(
+		// false,
+		// "Variable",
+		// var.variableName,
+		// Translator
+		// .trans("spss.error.variable.label.notunique",
+		// new Object[] { this.stringVariableLabelMap
+		// .get(var.getLabel()) }));
+		// } catch (DDIFtpException e) {
+		// new SPSSFileException(e.getMessage());
+		// }
+		// }
+		// }
+		// }
 	}
 
 	/**
@@ -2161,13 +2184,12 @@ public class SPSSFile extends RandomAccessFile {
 		}
 		return (SPSSUtils.byte4ToInt(buffer));
 	}
-	
+
 	static boolean isMultiByte(char c) throws UnsupportedEncodingException {
 		String s = Character.toString(c);
 		byte[] byteArr = s.getBytes("UTF-8");
 		return byteArr.length == 1;
 	}
-
 
 	/**
 	 * Reads a string from the SPSS file
@@ -2196,5 +2218,5 @@ public class SPSSFile extends RandomAccessFile {
 		this.read(buffer);
 		return buffer;
 	}
-	
+
 }

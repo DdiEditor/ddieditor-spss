@@ -35,6 +35,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.ddialliance.ddieditor.ui.model.ElementType;
 import org.ddialliance.ddiftp.util.DDIFtpException;
@@ -803,7 +804,7 @@ public abstract class SPSSVariable {
 			}
 
 			// code list representation
-			if (hasValueLabels()) {
+			if (hasNonMissingValueLabels()) {
 				Element codeRepresentation = (Element) representation
 						.appendChild(doc.createElementNS(
 								SPSSFile.DDI3_LOGICAL_PRODUCT_NAMESPACE,
@@ -1120,13 +1121,34 @@ public abstract class SPSSVariable {
 
 	/**
 	 * Determines if a variable is associated with a set of value labels
+	 * which differs from missing value labels
+	 * 
+	 * @return boolean true if a SPSSRecordtype3 exists for this variable
+	 */
+	public boolean hasNonMissingValueLabels() {
+		boolean nonMissingCategoryFound = false;
+		if (this.categoryMap.isEmpty()) {
+			return false;
+		}
+		Set<String> keys = this.categoryMap.keySet();
+		for (Iterator iterator = keys.iterator(); iterator.hasNext();) {
+			String key = (String) iterator.next();
+			if (!this.missingCategoryMap.containsKey(key)) {
+				nonMissingCategoryFound = true;
+				break;
+			}
+		}
+		return (nonMissingCategoryFound);
+	}
+
+	/**
+	 * Determines if a variable is associated with a set of value labels
 	 * 
 	 * @return boolean true if a SPSSRecordtype3 exists for this variable
 	 */
 	public boolean hasValueLabels() {
 		return (!this.categoryMap.isEmpty());
 	}
-
 	/**
 	 * Determines if a variable is a date without time information
 	 * 
