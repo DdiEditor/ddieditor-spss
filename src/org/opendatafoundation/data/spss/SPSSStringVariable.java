@@ -62,12 +62,12 @@ public class SPSSStringVariable extends SPSSVariable {
 	public SPSSVariableCategory addCategory(boolean missing, byte[] byteValue,
 			String label) {
 		SPSSVariableCategory cat;
-		String strValue = SPSSUtils.byte8ToString(byteValue);
+		String strValue = SPSSUtils.byte8ToString(byteValue).trim();
 		cat = categoryMap.get(strValue);
 		if (cat == null) {
 			// create and add to the map
 			cat = new SPSSVariableCategory();
-			categoryMap.put(strValue, cat);
+			categoryMap.put(strValue.trim(), cat);
 		}
 		cat.strValue = strValue;
 		cat.label = label;
