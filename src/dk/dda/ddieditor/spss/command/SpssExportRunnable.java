@@ -15,6 +15,7 @@ import java.util.ResourceBundle;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.xmlbeans.SchemaType;
 import org.apache.xmlbeans.XmlObject;
 import org.ddialliance.ddi3.xml.xmlbeans.logicalproduct.CategorySchemeDocument;
 import org.ddialliance.ddi3.xml.xmlbeans.logicalproduct.CategoryType;
@@ -31,6 +32,7 @@ import org.ddialliance.ddi3.xml.xmlbeans.physicaldataproduct.RecordLayoutDocumen
 import org.ddialliance.ddi3.xml.xmlbeans.physicaldataproduct.RecordLayoutSchemeDocument;
 import org.ddialliance.ddi3.xml.xmlbeans.physicaldataproduct.RecordLayoutType;
 import org.ddialliance.ddi3.xml.xmlbeans.reusable.CategoryRelationCodeType;
+import org.ddialliance.ddi3.xml.xmlbeans.reusable.CodeValueType;
 import org.ddialliance.ddi3.xml.xmlbeans.reusable.DateTimeRepresentationType;
 import org.ddialliance.ddi3.xml.xmlbeans.reusable.IDType;
 import org.ddialliance.ddi3.xml.xmlbeans.reusable.LabelType;
@@ -54,6 +56,7 @@ import org.ddialliance.ddiftp.util.log.LogFactory;
 import org.ddialliance.ddiftp.util.log.LogType;
 import org.ddialliance.ddiftp.util.xml.XmlBeansUtil;
 import org.eclipse.core.runtime.Platform;
+import org.opendatafoundation.data.spss.SPSSStringVariable;
 
 import dk.dda.ddieditor.spss.SPSSTime;
 import dk.dda.ddieditor.spss.wizard.ExportSpssWizard;
@@ -265,9 +268,15 @@ public class SpssExportRunnable implements Runnable {
 					PhysicalLocationType physicalLocation = getPhysicalLocation(vari
 							.getId());
 
-					// code representation
+					// code representation - string or numeric
 					if (vari.getValueRepresentation() instanceof CodeRepresentationType) {
-						sppsNumericSyntax(physicalLocation);
+						if (getPhysicalLocation(vari.getId())
+								.getStorageFormat().getStringValue()
+								.equals("string")) {
+							sppsStringSyntax(physicalLocation);
+						} else {
+							sppsNumericSyntax(physicalLocation);
+						}
 						addSpssSyntax(variables);
 
 						// VALUE LABELS
@@ -290,9 +299,7 @@ public class SpssExportRunnable implements Runnable {
 					else if (vari.getValueRepresentation() instanceof TextRepresentationType) {
 						// An String (alphanumeric). Specification of the
 						// maximum string length (n) is optional.
-
-						spssSyntaxTxt.append("A");
-						spssSyntaxTxt.append(physicalLocation.getWidth());
+						sppsStringSyntax(physicalLocation);
 
 						// define missing value labels
 						spssMissingValueLabelsForNonScaleVarables();
@@ -393,6 +400,17 @@ public class SpssExportRunnable implements Runnable {
 		} else {
 			spssSyntaxTxt.append(".0");
 		}
+	}
+
+	/**
+	 * Define SPSS string variable definition
+	 * 
+	 * @param physicalLocation
+	 *            DDI-L physical location
+	 */
+	void sppsStringSyntax(PhysicalLocationType physicalLocation) {
+		spssSyntaxTxt.append("A");
+		spssSyntaxTxt.append(physicalLocation.getWidth());
 	}
 
 	/**
